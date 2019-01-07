@@ -22,6 +22,7 @@ authors: Michele Alberti and Vinaychandran Pondenkandath (equal contribution)
 
 # Utils
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -267,7 +268,14 @@ class RunMe:
             logging.shutdown()
             logging.getLogger().handlers = []
             writer.close()
-            print('All done! (Log files at {} )'.format(current_log_folder))
+
+            # FIXME: this is a quickfix, there should be an option to prevent persisting anything!
+            if args.nolog:
+                dir_to_delete = os.path.join(args.output_folder, args.experiment_name)
+                shutil.rmtree(dir_to_delete)
+            else:
+                print('All done! (Log files at {} )'.format(current_log_folder))
+
         return train_scores, val_scores, test_scores
 
     @staticmethod

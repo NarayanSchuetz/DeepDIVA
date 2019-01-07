@@ -95,6 +95,9 @@ def _general_parameters(parser):
     parser_general.add_argument('--ignoregit',
                                 action='store_true',
                                 help='Run irrespective of git status.')
+    parser_general.add_argument('--nolog',
+                                action='store_true',
+                                help='Disables storing the log files after the experiment.')
 
 
 def _data_options(parser):
