@@ -108,6 +108,8 @@ ENV/
 
 # Log folder
 .logs
+log/
+/log/
 
 # Sphinx build stuff
 _build

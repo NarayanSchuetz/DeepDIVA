@@ -72,6 +72,11 @@ class ImageClassification:
                                                                             train_loader=train_loader,
                                                                             **kwargs)
 
+        # log model parameters
+        logging.info('Number of trainable model parameters: %d'
+                     % sum(p.numel() for p in model.parameters() if p.requires_grad))
+        logging.info('Number of total model parameters: %d' % sum(p.numel() for p in model.parameters()))
+
         # Core routine
         logging.info('Begin training')
         val_value = np.zeros((epochs + 1 - start_epoch))
@@ -98,13 +103,14 @@ class ImageClassification:
         # Load the best model before evaluating on the test set.
         logging.info('Loading the best model before evaluating on the '
                      'test set.')
-        kwargs["load_model"] = os.path.join(current_log_folder,
-                                            'model_best.pth.tar')
+        kwargs["load_model"] = os.path.join(current_log_folder, 'model_best.pth.tar')
         model, _, _, _, _ = set_up_model(num_classes=num_classes,
                                          model_name=model_name,
                                          lr=lr,
                                          train_loader=train_loader,
                                          **kwargs)
+
+
 
         # Test
         test_value = ImageClassification._test(test_loader, model, criterion, writer, epochs - 1, **kwargs)
