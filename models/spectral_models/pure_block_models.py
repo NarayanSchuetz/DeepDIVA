@@ -48,6 +48,68 @@ class BaseModel_150x150(nn.Module):
         return self.network(x)
 
 
+class BaseModel_150x150_Dft_Unfixed(nn.Module):
+    """Abstract Model for input with size 150x150"""
+
+    def __init__(self,
+                 first_block,
+                 second_block,
+                 third_block,
+                 output_channels=10,
+                 input_channels=3,
+                 fixed=None,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (150, 150)
+
+        self.network = nn.Sequential(
+            first_block(144, 144, input_channels, 36, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
+            nn.LeakyReLU(),
+            second_block(32, 32, 36, 64, 5, kernel_size_pooling=4, fixed=fixed),
+            nn.LeakyReLU(),
+            third_block(6, 6, 64, 64, 3, kernel_size_pooling=2, fixed=fixed),
+            nn.LeakyReLU(),
+            Flatten(),
+            nn.Linear(576, output_channels),
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class BaseModel_150x150_Dft_Fixed(nn.Module):
+    """Abstract Model for input with size 150x150"""
+
+    def __init__(self,
+                 first_block,
+                 second_block,
+                 third_block,
+                 output_channels=10,
+                 input_channels=3,
+                 fixed=None,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (150, 150)
+
+        self.network = nn.Sequential(
+            first_block(144, 144, input_channels, 48, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
+            nn.LeakyReLU(),
+            second_block(32, 32, 48, 96, 5, kernel_size_pooling=4, fixed=fixed),
+            nn.LeakyReLU(),
+            third_block(6, 6, 96, 164, 3, kernel_size_pooling=3, fixed=fixed),
+            nn.LeakyReLU(),
+            Flatten(),
+            nn.Linear(656, output_channels),
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+
 class BaseModel_32x32(nn.Module):
     """Abstract Model for input with size 32x32"""
 
@@ -123,7 +185,7 @@ class CosineBidirectional_150x150_Unfixed(BaseModel_150x150):
 
 
 @Model
-class FourierBidirectional_150x150_Fixed(BaseModel_150x150):
+class FourierBidirectional_150x150_Fixed(BaseModel_150x150_Dft_Fixed):
     """
     Network performing cosine transforms.
     150x150 -> Dft -> iDft -> Dft
@@ -142,7 +204,7 @@ class FourierBidirectional_150x150_Fixed(BaseModel_150x150):
 
 
 @Model
-class FourierBidirectional_150x150_Unfixed(BaseModel_150x150):
+class FourierBidirectional_150x150_Unfixed(BaseModel_150x150_Dft_Unfixed):
     """
     Network performing cosine transforms.
     150x150 -> Dft -> iDft -> Dft
@@ -507,4 +569,3 @@ class FirstFourier_32x32_Unfixed(BaseModel_32x32):
             input_channels=input_channels,
             **kwargs
         )
-
