@@ -73,59 +73,44 @@ def _evaluate(data_loader, model, criterion, writer, epoch, logging_label, no_cu
 
     pbar = tqdm(enumerate(data_loader), total=len(data_loader), unit='batch', ncols=150, leave=False)
 
-    with torch.no_grad():
+    for batch_idx, (input, target) in pbar:
 
-        for batch_idx, (input, target) in pbar:
+        # Measure data loading time
+        data_time.update(time.time() - end)
 
-            # Measure data loading time
-            data_time.update(time.time() - end)
+        # Moving data to GPU
+        if not no_cuda:
+            input = input.cuda(async=True)
+            target = target.cuda(async=True)
 
-            # Moving data to GPU
-            if not no_cuda:
-                input = input.cuda(async=True)
-                target = target.cuda(async=True)
+        # Convert the input and its labels to Torch Variables
+        input_var = torch.autograd.Variable(input)
+        target_var = torch.autograd.Variable(target)
 
-            # Convert the input and its labels to Torch Variables
-            input_var = torch.autograd.Variable(input)
-            target_var = torch.autograd.Variable(target)
+        # Compute output
+        output = model(input_var)
 
-            # Compute output
-            output = model(input_var)
+        # Compute and record the loss
+        loss = criterion(output, target_var)
+        losses.update(loss.data.item(), input.size(0))
 
-            # Compute and record the loss
-            loss = criterion(output, target_var)
-            losses.update(loss.data[0], input.size(0))
+        # Compute and record the accuracy
+        acc1 = accuracy(output.data, target, topk=(1,))[0]
+        top1.update(acc1[0], input.size(0))
 
-            # Compute and record the accuracy
-            acc1 = accuracy(output.data, target, topk=(1,))[0]
-            top1.update(acc1[0], input.size(0))
+        # Get the predictions
+        _ = [preds.append(item) for item in [np.argmax(item) for item in output.data.cpu().numpy()]]
+        _ = [targets.append(item) for item in target.cpu().numpy()]
 
-            # Get the predictions
-            _ = [preds.append(item) for item in [np.argmax(item) for item in output.data.cpu().numpy()]]
-            _ = [targets.append(item) for item in target.cpu().numpy()]
-
-            # Add loss and accuracy to Tensorboard
-            if multi_run is None:
-                writer.add_scalar(logging_label + '/mb_loss', loss.data[0], epoch * len(data_loader) + batch_idx)
-                writer.add_scalar(logging_label + '/mb_accuracy', acc1.cpu().numpy(), epoch * len(data_loader) + batch_idx)
-            else:
-                writer.add_scalar(logging_label + '/mb_loss_{}'.format(multi_run), loss.data[0],
-                                  epoch * len(data_loader) + batch_idx)
-                writer.add_scalar(logging_label + '/mb_accuracy_{}'.format(multi_run), acc1.cpu().numpy(),
-                                  epoch * len(data_loader) + batch_idx)
-
-            # Measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if batch_idx % log_interval == 0:
-                pbar.set_description(logging_label +
-                                     ' epoch [{0}][{1}/{2}]\t'.format(epoch, batch_idx, len(data_loader)))
-
-                pbar.set_postfix(Time='{batch_time.avg:.3f}\t'.format(batch_time=batch_time),
-                                 Loss='{loss.avg:.4f}\t'.format(loss=losses),
-                                 Acc1='{top1.avg:.3f}\t'.format(top1=top1),
-                                 Data='{data_time.avg:.3f}\t'.format(data_time=data_time))
+        # Add loss and accuracy to Tensorboard
+        if multi_run is None:
+            writer.add_scalar(logging_label + '/mb_loss', loss.data.item(), epoch * len(data_loader) + batch_idx)
+            writer.add_scalar(logging_label + '/mb_accuracy', acc1.cpu().numpy(), epoch * len(data_loader) + batch_idx)
+        else:
+            writer.add_scalar(logging_label + '/mb_loss_{}'.format(multi_run), loss.data.item(),
+                              epoch * len(data_loader) + batch_idx)
+            writer.add_scalar(logging_label + '/mb_accuracy_{}'.format(multi_run), acc1.cpu().numpy(),
+                              epoch * len(data_loader) + batch_idx)
 
         # Measure elapsed time
         batch_time.update(time.time() - end)
@@ -139,6 +124,19 @@ def _evaluate(data_loader, model, criterion, writer, epoch, logging_label, no_cu
                              Loss='{loss.avg:.4f}\t'.format(loss=losses),
                              Acc1='{top1.avg:.3f}\t'.format(top1=top1),
                              Data='{data_time.avg:.3f}\t'.format(data_time=data_time))
+
+    # Measure elapsed time
+    batch_time.update(time.time() - end)
+    end = time.time()
+
+    if batch_idx % log_interval == 0:
+        pbar.set_description(logging_label +
+                             ' epoch [{0}][{1}/{2}]\t'.format(epoch, batch_idx, len(data_loader)))
+
+        pbar.set_postfix(Time='{batch_time.avg:.3f}\t'.format(batch_time=batch_time),
+                         Loss='{loss.avg:.4f}\t'.format(loss=losses),
+                         Acc1='{top1.avg:.3f}\t'.format(top1=top1),
+                         Data='{data_time.avg:.3f}\t'.format(data_time=data_time))
 
     # Make a confusion matrix
     try:
