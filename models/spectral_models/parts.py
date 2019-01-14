@@ -32,46 +32,6 @@ class Flatten(nn.Module):
         return x
 
 
-class Dct2dPooling(nn.Module):
-    """
-    Implements pooling of 2d DCT outputs. It works by only cropping the matrix around the top left corner and then
-    transforms the non-cropped spectral parts back to the spatial domain. 
-    The result is a "compressed" version of the original image.
-    """
-
-    def __init__(self, new_width, new_height):
-        super().__init__()
-
-        self.width = new_width
-        self.height = new_height
-
-    def forward(self, x):
-        return x[:, :, :self.height, :self.width].clone()
-
-
-class DctII2dComparison(nn.Module):
-    """
-    Discrete Cosine II 2D layer with randomly (a variant of Xavier uniform) initialized weights.
-    """
-
-    def __init__(self, width, height):
-        super().__init__()
-        self.width = width
-        self.height = height
-        self.weights_1 = nn.Parameter(self._create_weight_tensor())
-        self.weights_2 = nn.Parameter(self._create_weight_tensor())
-
-    def _create_weight_tensor(self, ):
-        w = torch.Tensor(self.width, self.height)
-        stdv = 1. / math.sqrt(w.size(1))
-        w.uniform_(-stdv, stdv)
-        return w
-
-    def forward(self, input):
-        x = F.linear(torch.transpose(input, -2, -1), self.weights_1)
-        return F.linear(torch.transpose(x, -2, -1), self.weights_2)
-
-
 class DiscreteCosine2dConvBlockHybrid(nn.Module):
     """
     Defines a Discrete Cosine 2D Hybrid Block. It performs Conv -> Cos2D -> DepthConcat -> 1x1 operations on the input.
@@ -86,19 +46,18 @@ class DiscreteCosine2dConvBlockHybrid(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.cos = DctII2d(width, height, fixed=fixed)
-        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=1)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1)
 
     def forward(self, x):
-        x = self.conv(x)
-        out = self.cos(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
+        conv_out = self.conv(x)
+        spec_out = self.cos(x)
+        out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out
 
@@ -114,18 +73,17 @@ class DiscreteCosine2dConvBlock(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.cos = DctII2d(width, height, fixed=fixed)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
 
     def forward(self, x):
         x = self.conv(x)
-        out = self.cos(x)
-        out = self.pool(out)
-        return out
+        x = self.cos(x)
+        return x
 
 
 class DiscreteFourier2dConvBlockHybrid(nn.Module):
@@ -142,19 +100,18 @@ class DiscreteFourier2dConvBlockHybrid(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.fft = Dft2d(width, height, fixed=fixed)
-        self._1x1 = nn.Conv2d(3 * out_channels, out_channels, 1, groups=1)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels*2, out_channels=out_channels, kernel_size=1, groups=1)
 
     def forward(self, x):
-        x = self.conv(x)
-        out = self.fft(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
+        conv_out = self.conv(x)
+        spec_out = self.fft(x)
+        out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out
 
@@ -170,49 +127,17 @@ class DiscreteFourier2dConvBlock(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels//2, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.dft = Dft2d(width, height, fixed=fixed)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
 
     def forward(self, x):
         x = self.conv(x)
-        out = self.dft(x)
-        out = self.pool(out)
-        return out
-
-
-class ComparisonBlockDctHybrid(nn.Module):
-    """
-    Mimicks the discrete cosine II 2D hybrid block but with randomly initialized weights for the spectral transform.
-    """
-
-    def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 fixed=False,
-                 kernel_size_pooling=None,
-                 groups_conv=2):
-
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
-        self.lin = DctII2dComparison(width, height)
-        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=2)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
-
-    def forward(self, x):
-        x = self.conv(x)
-        out = self.lin(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
-        out = self._1x1(out)
-        return out
+        x = self.dft(x)
+        return x
 
 
 class InverseDiscreteCosine2dConvBlockHybrid(nn.Module):
@@ -230,19 +155,18 @@ class InverseDiscreteCosine2dConvBlockHybrid(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.cos = iDctII2d(width, height, fixed=fixed)
-        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=2)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1, groups=1)
 
     def forward(self, x):
-        x = self.conv(x)
-        out = self.cos(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
+        conv_out = self.conv(x)
+        spec_out = self.cos(x)
+        out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out
 
@@ -258,18 +182,17 @@ class InverseDiscreteCosine2dConvBlock(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.cos = iDctII2d(width, height, fixed=fixed)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
 
     def forward(self, x):
         x = self.conv(x)
-        out = self.cos(x)
-        out = self.pool(out)
-        return out
+        x = self.cos(x)
+        return x
 
 
 class InverseDiscreteFourier2dConvBlockHybrid(nn.Module):
@@ -287,19 +210,18 @@ class InverseDiscreteFourier2dConvBlockHybrid(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=2):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.ifft = iDft2d(width, height, fixed=fixed)
-        self._1x1 = nn.Conv2d(3 * out_channels, out_channels, 1, groups=2)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1, groups=1)
 
     def forward(self, x):
-        x = self.conv(x)
-        out = self.ifft(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
+        conv_out = self.conv(x)
+        spec_out = self.ifft(x)
+        out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out
 
@@ -315,17 +237,16 @@ class InverseDiscreteFourier2dConvBlock(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
-                 groups_conv=1):
+                 groups_conv=1,
+                 padding=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
         self.dft = iDft2d(width, height, fixed=fixed)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.dft(x)
-        x = self.pool(x)
         return x
 
 
@@ -344,96 +265,15 @@ class ConvBlock(nn.Module):
                  stride=1,
                  fixed=False,
                  kernel_size_pooling=None,
+                 padding=1,
                  groups_conv=1):
 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 2*out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
-        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=1)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
 
     def forward(self, x):
         out = self.conv(x)
-        out = self.pool(out)
-        out = self._1x1(out)
         return out
-
-
-class DctII2dComparison(nn.Module):
-    """
-    DctII2d with random weights.
-    """
-
-    def __init__(self, width, height):
-        super().__init__()
-        self.width = width
-        self.height = height
-        self.weights_1 = nn.Parameter(self._create_weight_tensor())
-        self.weights_2 = nn.Parameter(self._create_weight_tensor())
-
-    def _create_weight_tensor(self, ):
-        w = torch.Tensor(self.width, self.height)
-        stdv = 1. / math.sqrt(w.size(1))
-        w.uniform_(-stdv, stdv)
-        return w
-
-    def forward(self, input):
-        x = F.linear(torch.transpose(input, -2, -1), self.weights_1)
-        return F.linear(torch.transpose(x, -2, -1), self.weights_2)
-
-
-class DftComparison(nn.Module):
-
-    def __init__(self, width, height):
-        super().__init__()
-        self.width = width
-        self.height = height
-        self.weights_1 = nn.Parameter(self._create_weight_tensor())
-        self.weights_2 = nn.Parameter(self._create_weight_tensor())
-        self.weights_3 = nn.Parameter(self._create_weight_tensor())
-        self.weights_4 = nn.Parameter(self._create_weight_tensor())
-
-    def _create_weight_tensor(self, ):
-        w = torch.Tensor(self.width, self.height)
-        stdv = 1. / math.sqrt(w.size(1))
-        w.uniform_(-stdv, stdv)
-        return w
-
-    def forward(self, input):
-        x = F.linear(torch.transpose(input, -2, -1), self.weights_1)
-        return F.linear(torch.transpose(x, -2, -1), self.weights_2)
-
-
-class DctIIComparisonBlock(nn.Module):
-    """
-    Defines a block mimicking the DctII2D Blocks but with randomly initialized weights (Xavier uniform like).
-    """
-
-    def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 fixed=False,
-                 kernel_size_pooling=None,
-                 groups_conv=2):
-
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
-        self.lin = DctII2dComparison(width, height)
-        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=2)
-        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
-
-    def forward(self, x):
-        x = self.conv(x)
-        out = self.lin(x)
-        out = torch.cat((out, x), 1)
-        out = self.pool(out)
-        out = self._1x1(out)
-        return out
-
-
 
 
 
