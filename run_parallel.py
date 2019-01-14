@@ -28,6 +28,7 @@ OPTIMIZER = "Adam"
 
 BATCH_SIZE = 64
 
+MODELS_150 = []
 """
 MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "Cosine_150x150_Unfixed",
