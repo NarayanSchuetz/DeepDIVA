@@ -38,7 +38,6 @@ def _print_model_parameters(model):
             print('Number of trainable model parameters: %d'
                   % sum(p.numel() for p in model.parameters() if p.requires_grad))
             print('Number of total model parameters: %d\n' % sum(p.numel() for p in model.parameters()))
-
         except:
             warnings.warn("Couldn't access parameters of callable %s due to the following error:" %
                           model.__class__.__name__)
@@ -69,6 +68,6 @@ if __name__ == "__main__":
     elif args.pattern is not None:
         list_model_parameters_by_pattern(args.pattern)
     else:
-        print("Not supported arguments provided")
+        print("Invalid CL arguments")
         parser.print_help()
 

@@ -100,49 +100,29 @@ class PureConv_150x150(BaseModel_150x150):
 
 
 @Model
-class PureConv_32x32(BaseModel_32x32):
+class PureConv_32x32(nn.Module):
 
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            ConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=False,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+    def __init__(self,
+                 output_channels=10,
+                 input_channels=3,
+                 fixed=True,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (32, 32)
+
+        self.network = nn.Sequential(
+            ConvBlock(32, 32, input_channels, 64, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 64, 128, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 128, 256, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(256, output_channels)
         )
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Comparison Models with randomly initialized coefficients instead of coefficients for spectral transforms
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-@Model
-class DctIIRandomWeights_150x150(BaseModel_150x150):
-
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DctIIComparisonBlock,
-            DctIIComparisonBlock,
-            DctIIComparisonBlock,
-            fixed=None,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
-        )
-
-
-@Model
-class DctIIRandomWeights_32x32(BaseModel_32x32):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DctIIComparisonBlock,
-            DctIIComparisonBlock,
-            DctIIComparisonBlock,
-            fixed=None,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
-        )
+    def forward(self, x):
+        return self.network(x)
