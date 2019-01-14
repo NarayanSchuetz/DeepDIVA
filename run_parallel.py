@@ -28,7 +28,7 @@ OPTIMIZER = "Adam"
 
 BATCH_SIZE = 64
 
-
+"""
 MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "Cosine_150x150_Unfixed",
               "HybridCosineBidirectional_150x150_Fixed",
@@ -53,7 +53,7 @@ MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "FirstFourier_150x150_Fixed",
               "HybridFourier_150x150_Fixed",
               "FirstFourier_150x150_Unfixed"]
-
+"""
 
 """
 MODELS_32 = ["Fourier_32x32_Fixed",
