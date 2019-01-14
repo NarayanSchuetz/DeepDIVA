@@ -59,13 +59,13 @@ MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
              "PureConv_32x32"]
 
 DATASETS_32 = ["toy_dataset/CIFAR10",
-               "toy_dataset/FashionMNIST"]
+               "toy_dataset/FashionMNIST",
+               "toy_dataset/ColorectalHist"]
 
 DATASETS_150 = ["toy_dataset/ColorectalHist"]
 
 
 class Experiment(object):
-
     def __init__(self,
                  experiment_name,
                  model_name,
