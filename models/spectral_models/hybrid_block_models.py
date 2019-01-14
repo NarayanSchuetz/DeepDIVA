@@ -85,7 +85,7 @@ class BaseModel_32x32(nn.Module):
 
 
 @Model
-class HybridCosineBidirectional_150x150_Fixed(BaseModel_150x150):
+class HybridCosineBidirectional_150x150_Fixed(nn.Module):
     """
     Network performing cosine transforms.
     150x150 -> DCTII -> iDCTII -> DCTII

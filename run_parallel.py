@@ -95,7 +95,9 @@ MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
              "FourierBidirectional_32x32_Fixed",
              "FourierBidirectional_32x32_Unfixed",
              "FirstCosine_32x32_Fixed",
+             "FirstCosine_32x32_Unfixed",
              "FirstFourier_32x32_Unfixed",
+             "FirstFourier_32x32_Fixed",
              "PureConv_32x32"]
 
 

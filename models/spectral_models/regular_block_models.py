@@ -460,15 +460,15 @@ class FirstCosine_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(64, 64, input_channels, 36, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteCosine2dConvBlock(64, 64, input_channels, 51, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlock(32, 32, 72, 110, 5, fixed=fixed, padding=2, stride=2),
+            ConvBlock(32, 32, 51, 108, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(32, 32, 110, 192, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, 108, 256, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(384, output_channels)
+            nn.Linear(256, output_channels)
         )
 
     def forward(self, x):
@@ -476,45 +476,90 @@ class FirstCosine_150x150_Fixed(nn.Module):
 
 
 @Model
-class FirstCosine_150x150_Unfixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteCosine2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=False,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstCosine_150x150_Unfixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=False,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteCosine2dConvBlock(64, 64, input_channels, 51, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 51, 108, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 108, 248, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(248, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
-class FirstFourier_150x150_Fixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteFourier2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=True,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstFourier_150x150_Fixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=True,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteFourier2dConvBlock(64, 64, input_channels, 28, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 56, 107, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 107, 250, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(250, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
-class FirstFourier_150x150_Unfixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteFourier2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=False,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstFourier_150x150_Unfixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=False,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteFourier2dConvBlock(64, 64, input_channels, 26, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 52, 107, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 107, 245, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(245, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
