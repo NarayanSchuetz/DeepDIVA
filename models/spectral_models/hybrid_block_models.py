@@ -10,7 +10,6 @@
 from .parts import *
 import torch.nn as nn
 from .registry import Model
-import torch.nn.functional as F
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -149,7 +148,7 @@ class HybridCosineBidirectional_32x32_Fixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(228, output_channels)
+            nn.Linear(220, output_channels)
         )
 
     def forward(self, x):
@@ -182,7 +181,7 @@ class HybridCosineBidirectional_32x32_Unfixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(224, output_channels)
+            nn.Linear(220, output_channels)
         )
 
     def forward(self, x):
@@ -215,7 +214,7 @@ class HybridFourierBidirectional_32x32_Fixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(218, output_channels)
+            nn.Linear(212, output_channels)
         )
 
     def forward(self, x):
@@ -248,7 +247,7 @@ class HybridFourierBidirectional_32x32_Unfixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(224, output_channels)
+            nn.Linear(212, output_channels)
         )
 
     def forward(self, x):
