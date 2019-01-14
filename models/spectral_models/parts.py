@@ -32,6 +32,35 @@ class Flatten(nn.Module):
         return x
 
 
+class DiscreteCosine2dConvBlockHybridMaxPool(nn.Module):
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=3,
+                 groups_conv=1,
+                 padding=1):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
+        self.cos = DctII2d(width, height, fixed=fixed)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling, stride=2, padding=1)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1)
+
+    def forward(self, x):
+        conv_out = self.conv(x)
+        spec_out = self.cos(x)
+        spec_out = self.pool(spec_out)
+        out = torch.cat((conv_out, spec_out), 1)
+        out = self._1x1(out)
+        return out
+
+
 class DiscreteCosine2dConvBlockHybrid(nn.Module):
     """
     Defines a Discrete Cosine 2D Hybrid Block. It performs Conv -> Cos2D -> DepthConcat -> 1x1 operations on the input.
@@ -111,6 +140,38 @@ class DiscreteFourier2dConvBlockHybrid(nn.Module):
     def forward(self, x):
         conv_out = self.conv(x)
         spec_out = self.fft(x)
+        out = torch.cat((conv_out, spec_out), 1)
+        out = self._1x1(out)
+        return out
+
+
+class DiscreteFourier2dConvBlockHybridMaxPool(nn.Module):
+    """
+    Defines a Discrete Fourier 2D Hybrid Block. It performs Conv -> Dft2D -> DepthConcat -> 1x1 operations on the input.
+    """
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=3,
+                 groups_conv=1,
+                 padding=1):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
+        self.fft = Dft2d(width, height, fixed=fixed)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling, stride=2, padding=1)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels*2, out_channels=out_channels, kernel_size=1, groups=1)
+
+    def forward(self, x):
+        conv_out = self.conv(x)
+        spec_out = self.fft(x)
+        spec_out = self.pool(spec_out)
         out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out
