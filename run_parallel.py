@@ -48,6 +48,7 @@ MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "FirstFourier_150x150_Fixed",
               "HybridFourier_150x150_Fixed",
               "FirstFourier_150x150_Unfixed"]
+"""
 
 MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
              "HybridCosineBidirectional_32x32_Unfixed",
