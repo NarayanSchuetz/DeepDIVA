@@ -16,6 +16,14 @@ NUMBER_EPOCHS = 600
 PROCESSES_PER_GPU = 2
 
 """
+LEARNING_RATE = 0.001
+
+OPTIMIZER = "Adam"
+
+BATCH_SIZE = 64
+"""
+
+"""
 MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "Cosine_150x150_Unfixed",
               "HybridCosineBidirectional_150x150_Fixed",
@@ -40,7 +48,6 @@ MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "FirstFourier_150x150_Fixed",
               "HybridFourier_150x150_Fixed",
               "FirstFourier_150x150_Unfixed"]
-"""
 
 MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
              "HybridCosineBidirectional_32x32_Unfixed",
@@ -55,7 +62,9 @@ MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
              "FourierBidirectional_32x32_Fixed",
              "FourierBidirectional_32x32_Unfixed",
              "FirstCosine_32x32_Fixed",
+             "FirstCosine_32x32_Unfixed",
              "FirstFourier_32x32_Unfixed",
+             "FirstFourier_32x32_Fixed",
              "PureConv_32x32"]
 
 DATASETS_32 = ["toy_dataset/CIFAR10",

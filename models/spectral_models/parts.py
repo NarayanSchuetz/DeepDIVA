@@ -232,6 +232,35 @@ class InverseDiscreteCosine2dConvBlockHybrid(nn.Module):
         return out
 
 
+class InverseDiscreteCosine2dConvBlockHybridMaxPool(nn.Module):
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=2,
+                 groups_conv=1,
+                 padding=1):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
+        self.cos = iDctII2d(width, height, fixed=fixed)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling, stride=2)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1, groups=1)
+
+    def forward(self, x):
+        conv_out = self.conv(x)
+        spec_out = self.cos(x)
+        spec_out = self.pool(spec_out)
+        out = torch.cat((conv_out, spec_out), 1)
+        out = self._1x1(out)
+        return out
+
+
 class InverseDiscreteCosine2dConvBlock(nn.Module):
 
     def __init__(self,
@@ -282,6 +311,39 @@ class InverseDiscreteFourier2dConvBlockHybrid(nn.Module):
     def forward(self, x):
         conv_out = self.conv(x)
         spec_out = self.ifft(x)
+        out = torch.cat((conv_out, spec_out), 1)
+        out = self._1x1(out)
+        return out
+
+
+class InverseDiscreteFourier2dConvBlockHybridMaxPool(nn.Module):
+    """
+    Defines an inverse Discrete Fourier 2D Hybrid Block. It performs Conv -> iDct2D -> DepthConcat -> 1x1 operations on
+    the input.
+    """
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=2,
+                 groups_conv=1,
+                 padding=1):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
+        self.ifft = iDft2d(width, height, fixed=fixed)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling, stride=2)
+        self._1x1 = nn.Conv2d(in_channels=out_channels+in_channels, out_channels=out_channels, kernel_size=1, groups=1)
+
+    def forward(self, x):
+        conv_out = self.conv(x)
+        spec_out = self.ifft(x)
+        spec_out = self.pool(spec_out)
         out = torch.cat((conv_out, spec_out), 1)
         out = self._1x1(out)
         return out

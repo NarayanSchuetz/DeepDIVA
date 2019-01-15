@@ -13,166 +13,6 @@ from .registry import Model
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Base Models
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-class BaseModel_150x150(nn.Module):
-    """Abstract Model for input with size 150x150"""
-
-    def __init__(self,
-                 first_block,
-                 second_block,
-                 third_block,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=None,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (150, 150)
-
-        self.network = nn.Sequential(
-            first_block(144, 144, input_channels, 16, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
-            nn.LeakyReLU(),
-            second_block(32, 32, 16, 32, 5, kernel_size_pooling=4, fixed=fixed),
-            nn.LeakyReLU(),
-            third_block(6, 6, 32, 64, 3, kernel_size_pooling=2, fixed=fixed),
-            nn.LeakyReLU(),
-            Flatten(),
-            nn.Linear(576, output_channels),
-        )
-
-    def forward(self, x):
-        return self.network(x)
-
-
-class BaseModel_150x150_Dft_Unfixed(nn.Module):
-    """Abstract Model for input with size 150x150"""
-
-    def __init__(self,
-                 first_block,
-                 second_block,
-                 third_block,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=None,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (150, 150)
-
-        self.network = nn.Sequential(
-            first_block(144, 144, input_channels, 36, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
-            nn.LeakyReLU(),
-            second_block(32, 32, 36, 64, 5, kernel_size_pooling=4, fixed=fixed),
-            nn.LeakyReLU(),
-            third_block(6, 6, 64, 64, 3, kernel_size_pooling=2, fixed=fixed),
-            nn.LeakyReLU(),
-            Flatten(),
-            nn.Linear(576, output_channels),
-        )
-
-    def forward(self, x):
-        return self.network(x)
-
-
-class BaseModel_150x150_Dft_Fixed(nn.Module):
-    """Abstract Model for input with size 150x150"""
-
-    def __init__(self,
-                 first_block,
-                 second_block,
-                 third_block,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=None,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (150, 150)
-
-        self.network = nn.Sequential(
-            first_block(144, 144, input_channels, 48, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
-            nn.LeakyReLU(),
-            second_block(32, 32, 48, 96, 5, kernel_size_pooling=4, fixed=fixed),
-            nn.LeakyReLU(),
-            third_block(6, 6, 96, 164, 3, kernel_size_pooling=3, fixed=fixed),
-            nn.LeakyReLU(),
-            Flatten(),
-            nn.Linear(656, output_channels),
-        )
-
-    def forward(self, x):
-        return self.network(x)
-
-
-class BaseModel_150x150_Dft_Only_Fixed(nn.Module):
-    """Abstract Model for input with size 150x150"""
-
-    def __init__(self,
-                 first_block,
-                 second_block,
-                 third_block,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=None,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (150, 150)
-
-        self.network = nn.Sequential(
-            first_block(144, 144, input_channels, 96, 7, kernel_size_pooling=4, groups_conv=1, fixed=fixed),
-            nn.LeakyReLU(),
-            second_block(32, 32, 96, 148, 5, kernel_size_pooling=4, fixed=fixed),
-            nn.LeakyReLU(),
-            third_block(6, 6, 150, 148, 3, kernel_size_pooling=3, fixed=fixed),
-            nn.LeakyReLU(),
-            Flatten(),
-            nn.Linear(656, output_channels),
-        )
-
-    def forward(self, x):
-        return self.network(x)
-
-
-class BaseModel_32x32(nn.Module):
-    """Abstract Model for input with size 32x32"""
-
-    def __init__(self,
-                 first_block,
-                 second_block,
-                 third_block,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=None,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (32, 32)
-
-        self.network = nn.Sequential(
-            first_block(28, 28, input_channels, 16, 5, kernel_size_pooling=2, groups_conv=1, fixed=fixed),
-            nn.LeakyReLU(),
-            second_block(12, 12, 16, 32, 3, kernel_size_pooling=2, fixed=fixed),
-            nn.LeakyReLU(),
-            third_block(4, 4, 32, 32, 3, kernel_size_pooling=1, fixed=fixed),
-            nn.LeakyReLU(),
-            Flatten(),
-            nn.Linear(512, output_channels),
-        )
-
-    def forward(self, x):
-        return self.network(x)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
 # Bidirectional Models
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -460,15 +300,15 @@ class FirstCosine_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(64, 64, input_channels, 36, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteCosine2dConvBlock(64, 64, input_channels, 51, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlock(32, 32, 72, 110, 5, fixed=fixed, padding=2, stride=2),
+            ConvBlock(32, 32, 51, 108, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(32, 32, 110, 192, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, 108, 256, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(384, output_channels)
+            nn.Linear(256, output_channels)
         )
 
     def forward(self, x):
@@ -476,45 +316,90 @@ class FirstCosine_150x150_Fixed(nn.Module):
 
 
 @Model
-class FirstCosine_150x150_Unfixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteCosine2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=False,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstCosine_150x150_Unfixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=False,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteCosine2dConvBlock(64, 64, input_channels, 51, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 51, 108, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 108, 248, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(248, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
-class FirstFourier_150x150_Fixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteFourier2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=True,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstFourier_150x150_Fixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=True,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteFourier2dConvBlock(64, 64, input_channels, 28, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 56, 107, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 107, 250, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(250, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
-class FirstFourier_150x150_Unfixed(BaseModel_150x150):
-    def __init__(self, output_channels=10, input_channels=3, **kwargs):
-        super().__init__(
-            DiscreteFourier2dConvBlock,
-            ConvBlock,
-            ConvBlock,
-            fixed=False,
-            output_channels=output_channels,
-            input_channels=input_channels,
-            **kwargs
+class FirstFourier_150x150_Unfixed(nn.Module):
+
+    def __init__(self,
+                 output_channels=8,
+                 input_channels=3,
+                 fixed=False,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (127, 127)
+
+        self.network = nn.Sequential(
+            DiscreteFourier2dConvBlock(64, 64, input_channels, 26, 7, fixed=fixed, padding=3, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 52, 107, 5, fixed=fixed, padding=2, stride=2),
+            nn.LeakyReLU(),
+            ConvBlock(32, 32, 107, 245, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(245, output_channels)
         )
+
+    def forward(self, x):
+        return self.network(x)
 
 
 @Model
