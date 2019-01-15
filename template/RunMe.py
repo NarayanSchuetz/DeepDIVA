@@ -138,11 +138,11 @@ class RunMe:
                     args.__dict__[key] = params[key]
                 _, _, score = self._execute(args)
                 # In case of multi-run the return type will be a list (otherwise is a single float)
-                if type(score) != float:
-                    [conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=item)
+                if type(score.item()) != float:
+                    [conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=item.team())
                      for item in score]
                 else:
-                    conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=score)
+                    conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=score.item())
         return None, None, None
 
     def _run_manual_optimization(self, args):
