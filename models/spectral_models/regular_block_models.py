@@ -275,7 +275,7 @@ class FourierBidirectional_32x32_Unfixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(516, output_channels)
+            nn.Linear(528, output_channels)
         )
 
     def forward(self, x):

@@ -33,7 +33,7 @@ MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
               "HybridFourier_150x150_Unfixed",
               "FirstCosine_150x150_Fixed",
               "DctIIRandomWeights_150x150",
-              "HybridFirstCosine_150x150_Unfixed",
+              "HybridFirstCosine_150x150_Unfixed",git 
               "FirstCosine_150x150_Unfixed",
               "Fourier_150x150_Fixed",
               "HybridFirstFourier_150x150_Fixed",

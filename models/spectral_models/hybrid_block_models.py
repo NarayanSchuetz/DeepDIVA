@@ -241,7 +241,7 @@ class HybridFourierBidirectional_32x32_Fixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(212, output_channels)
+            nn.Linear(220, output_channels)
         )
 
     def forward(self, x):
