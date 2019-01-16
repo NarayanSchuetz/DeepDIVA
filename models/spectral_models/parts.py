@@ -10,13 +10,12 @@
 from spectral import Dft2d, iDft2d, DctII2d, iDctII2d, DctII1d
 import torch.nn as nn
 import torch
-import torch.nn.functional as F
-import math
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Model parts are defined here
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 
 class Flatten(nn.Module):
