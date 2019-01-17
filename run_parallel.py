@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = "test"
+EXPERIMENT_NAME_PREFIX = ""
 LOG_FOLDER = "output"
 LOG_FOLDER_LONG = "log"
 NUMBER_EPOCHS_SHORT = 25
@@ -20,6 +20,7 @@ NUMBER_EPOCHS_LONG = 1000
 PROCESSES_PER_GPU = 3
 
 MODELS = [
+    "PureConv_32x32",
     "HybridCosineBidirectional_32x32_Fixed",
     "HybridCosineBidirectional_32x32_Unfixed",
     "HybridFourierBidirectional_32x32_Fixed",
@@ -36,7 +37,6 @@ MODELS = [
     "FirstCosine_32x32_Unfixed",
     "FirstFourier_32x32_Fixed",
     "FirstFourier_32x32_Unfixed",
-    "PureConv_32x32"
 ]
 
 DATASETS = [
@@ -113,7 +113,7 @@ class ExperimentsBuilder(object):
             for dataset in dataset_folders_list:
                 best_parameters = ExperimentsBuilder._get_best_parameters(experiment_name_prefix + '_' + model + '_' + dataset)
 
-                experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
+                experiment = Experiment("long_" + experiment_name_prefix, model, output_folder, dataset, epochs,
                                         "--momentum 0.9 " \
                                         "--lr {LR:f} " \
                                         "--weight-decay {WD:f}".format(
