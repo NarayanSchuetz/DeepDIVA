@@ -48,6 +48,7 @@ class PureConv_32x32(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=16, # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -55,15 +56,15 @@ class PureConv_32x32(nn.Module):
         self.expected_input_size = (32, 32)
 
         self.network = nn.Sequential(
-            ConvBlock(32, 32, input_channels, 64, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, input_channels, ocl1, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 64, 128, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 128, 256, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(256, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):

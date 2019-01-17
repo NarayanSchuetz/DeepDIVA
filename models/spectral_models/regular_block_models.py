@@ -161,6 +161,7 @@ class CosineBidirectional_32x32_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=16,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -168,15 +169,15 @@ class CosineBidirectional_32x32_Fixed(nn.Module):
         self.expected_input_size = (32, 32)
 
         self.network = nn.Sequential(
-            DiscreteCosine2dConvBlock(32, 32, input_channels, 64, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteCosine2dConvBlock(32, 32, input_channels, ocl1, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            InverseDiscreteCosine2dConvBlock(32, 32, 64, 128, 3, fixed=fixed, padding=1, stride=1),
+            InverseDiscreteCosine2dConvBlock(32, 32, ocl1, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            DiscreteCosine2dConvBlock(32, 32, 128, 256, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteCosine2dConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(256, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -189,31 +190,8 @@ class CosineBidirectional_32x32_Unfixed(nn.Module):
     Network performing cosine transforms.
     32x32 -> DCTII -> iDCTII -> DCTII
     """
-
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (32, 32)
-
-        self.network = nn.Sequential(
-            DiscreteCosine2dConvBlock(32, 32, input_channels, 60, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            InverseDiscreteCosine2dConvBlock(32, 32, 60, 128, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            DiscreteCosine2dConvBlock(32, 32, 128, 256, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(256, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=14, ** kwargs)
 
 
 @Model
@@ -227,6 +205,7 @@ class FourierBidirectional_32x32_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=16,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -234,15 +213,15 @@ class FourierBidirectional_32x32_Fixed(nn.Module):
         self.expected_input_size = (32, 32)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(32, 32, input_channels, 30, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteFourier2dConvBlock(32, 32, input_channels, ocl1, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlock(32, 32, 60, 128, 3, fixed=fixed, padding=1, stride=1),
+            InverseDiscreteFourier2dConvBlock(32, 32, ocl1*2, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(32, 32, 128, 258, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteFourier2dConvBlock(32, 32, ocl1*2, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(516, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -256,30 +235,8 @@ class FourierBidirectional_32x32_Unfixed(nn.Module):
     32x32 -> Dft -> iDft -> Dft
     """
 
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (32, 32)
-
-        self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(32, 32, input_channels, 30, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlock(32, 32, 60, 122, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(32, 32, 122, 264, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(528, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=12, ** kwargs)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Only First Block Spectral Models
@@ -409,6 +366,7 @@ class FirstCosine_32x32_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=16,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -416,15 +374,15 @@ class FirstCosine_32x32_Fixed(nn.Module):
         self.expected_input_size = (32, 32)
 
         self.network = nn.Sequential(
-            DiscreteCosine2dConvBlock(32, 32, input_channels, 64, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteCosine2dConvBlock(32, 32, input_channels, ocl1, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 64, 128, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 128, 258, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(258, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -433,14 +391,8 @@ class FirstCosine_32x32_Fixed(nn.Module):
 
 @Model
 class FirstCosine_32x32_Unfixed(FirstCosine_32x32_Fixed):
-
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, **kwargs)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=15, **kwargs)
 
 
 @Model
@@ -450,6 +402,7 @@ class FirstFourier_32x32_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=16,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -457,15 +410,15 @@ class FirstFourier_32x32_Fixed(nn.Module):
         self.expected_input_size = (32, 32)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(32, 32, input_channels, 32, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteFourier2dConvBlock(32, 32, input_channels, ocl1, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 64, 128, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*2, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 128, 258, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(258, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -474,28 +427,5 @@ class FirstFourier_32x32_Fixed(nn.Module):
 
 @Model
 class FirstFourier_32x32_Unfixed(nn.Module):
-
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (32, 32)
-
-        self.network = nn.Sequential(
-            DiscreteFourier2dConvBlock(32, 32, input_channels, 30, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            ConvBlock(32, 32, 60, 128, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            ConvBlock(32, 32, 128, 258, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(258, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=15,**kwargs)
