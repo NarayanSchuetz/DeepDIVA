@@ -12,12 +12,12 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = "test"
+EXPERIMENT_NAME_PREFIX = ""
 LOG_FOLDER = "output"
 LOG_FOLDER_LONG = "log"
 NUMBER_EPOCHS_SHORT = 25
 NUMBER_EPOCHS_LONG = 1000
-PROCESSES_PER_GPU = 3
+PROCESSES_PER_GPU = 4
 
 MODELS = [
     "PureConv_32x32",

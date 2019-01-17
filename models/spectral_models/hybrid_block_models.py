@@ -28,6 +28,7 @@ class HybridFourierBidirectional_150x150_Fixed(nn.Module):
                  output_channels=8,
                  input_channels=3,
                  fixed=True,
+                 ocl1=30,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -35,15 +36,15 @@ class HybridFourierBidirectional_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, 48, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, ocl1, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlockHybridMaxPool(64, 64, 48, 96, 5, fixed=fixed, padding=2, stride=2),
+            InverseDiscreteFourier2dConvBlockHybridMaxPool(64, 64, ocl1, ocl1*2, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlockHybrid(32, 32, 96, 204, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteFourier2dConvBlockHybrid(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(204, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -51,36 +52,13 @@ class HybridFourierBidirectional_150x150_Fixed(nn.Module):
 
 
 @Model
-class HybridFourierBidirectional_150x150_Unfixed(nn.Module):
+class HybridFourierBidirectional_150x150_Unfixed(HybridFourierBidirectional_150x150_Fixed):
     """
     Network performing cosine transforms.
     150x150 -> DCTII -> iDCTII -> DCTII
     """
-
-    def __init__(self,
-                 output_channels=8,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (127, 127)
-
-        self.network = nn.Sequential(
-            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, 40, 7, fixed=fixed, padding=3, stride=2),
-            nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlockHybridMaxPool(64, 64, 40, 86, 5, fixed=fixed, padding=2, stride=2),
-            nn.LeakyReLU(),
-            DiscreteFourier2dConvBlockHybrid(32, 32, 86, 180, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(180, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=20, **kwargs)
 
 
 @Model
@@ -94,6 +72,7 @@ class HybridCosineBidirectional_150x150_Fixed(nn.Module):
                  output_channels=8,
                  input_channels=3,
                  fixed=True,
+                 ocl1=30,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -101,15 +80,15 @@ class HybridCosineBidirectional_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, 46, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, ocl1, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            InverseDiscreteCosine2dConvBlockHybridMaxPool(64, 64, 46, 100, 5, fixed=fixed, padding=2, stride=2),
+            InverseDiscreteCosine2dConvBlockHybridMaxPool(64, 64, ocl1, ocl1*2, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            DiscreteCosine2dConvBlockHybrid(32, 32, 100, 212, 3, fixed=fixed, padding=1, stride=1),
+            DiscreteCosine2dConvBlockHybrid(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(212, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -117,36 +96,13 @@ class HybridCosineBidirectional_150x150_Fixed(nn.Module):
 
 
 @Model
-class HybridCosineBidirectional_150x150_Unfixed(nn.Module):
+class HybridCosineBidirectional_150x150_Unfixed(HybridCosineBidirectional_150x150_Fixed):
     """
     Network performing cosine transforms.
     150x150 -> DCTII -> iDCTII -> DCTII
     """
-
-    def __init__(self,
-                 output_channels=8,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (127, 127)
-
-        self.network = nn.Sequential(
-            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, 46, 7, fixed=fixed, padding=3, stride=2),
-            nn.LeakyReLU(),
-            InverseDiscreteCosine2dConvBlockHybridMaxPool(64, 64, 46, 96, 5, fixed=fixed, padding=2, stride=2),
-            nn.LeakyReLU(),
-            DiscreteCosine2dConvBlockHybrid(32, 32, 96, 192, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(192, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=25, **kwargs)
 
 
 @Model
@@ -189,7 +145,7 @@ class HybridCosineBidirectional_32x32_Unfixed(HybridCosineBidirectional_32x32_Fi
     Network performing cosine transforms.
     32x32 -> DCTII -> iDCTII -> DCTII
     """
-    def __init__(self, output_channels=10, input_channels=3, fixed=True, **kwargs):
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
         super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=12, **kwargs)
 
 @Model
@@ -239,8 +195,6 @@ class HybridFourierBidirectional_32x32_Unfixed(HybridFourierBidirectional_32x32_
 # ---------------------------------------------∂-------------------------------------------------------------------------
 # Only First Block Spectral Models
 # ----------------------------------------------------------------------------------------------------------------------
-
-
 @Model
 class HybridFirstCosine_150x150_Fixed(nn.Module):
 
@@ -248,6 +202,7 @@ class HybridFirstCosine_150x150_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=32,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -255,15 +210,15 @@ class HybridFirstCosine_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, 56, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, ocl1, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            ConvBlock(64, 64, 56, 112, 5, fixed=fixed, padding=2, stride=2),
+            ConvBlock(64, 64, ocl1, ocl1*2, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 112, 224, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(224, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -271,32 +226,9 @@ class HybridFirstCosine_150x150_Fixed(nn.Module):
 
 
 @Model
-class HybridFirstCosine_150x150_Unfixed(nn.Module):
-
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (127, 127)
-
-        self.network = nn.Sequential(
-            DiscreteCosine2dConvBlockHybridMaxPool(127, 127, input_channels, 54, 7, fixed=fixed, padding=3, stride=2),
-            nn.LeakyReLU(),
-            ConvBlock(64, 64, 54, 106, 5, fixed=fixed, padding=2, stride=2),
-            nn.LeakyReLU(),
-            ConvBlock(32, 32, 106, 216, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(216, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+class HybridFirstCosine_150x150_Unfixed(HybridFirstCosine_150x150_Fixed):
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=29, **kwargs)
 
 
 @Model
@@ -306,6 +238,7 @@ class HybridFirstFourier_150x150_Fixed(nn.Module):
                  output_channels=10,
                  input_channels=3,
                  fixed=True,
+                 ocl1=32,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -313,15 +246,15 @@ class HybridFirstFourier_150x150_Fixed(nn.Module):
         self.expected_input_size = (127, 127)
 
         self.network = nn.Sequential(
-            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, 56, 7, fixed=fixed, padding=3, stride=2),
+            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, ocl1, 7, fixed=fixed, padding=3, stride=2),
             nn.LeakyReLU(),
-            ConvBlock(64, 64, 56, 112, 5, fixed=fixed, padding=2, stride=2),
+            ConvBlock(64, 64, ocl1, ocl1*2, 5, fixed=fixed, padding=2, stride=2),
             nn.LeakyReLU(),
-            ConvBlock(32, 32, 112, 224, 3, fixed=fixed, padding=1, stride=1),
+            ConvBlock(32, 32, ocl1*2, ocl1*4, 3, fixed=fixed, padding=1, stride=1),
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(224, output_channels)
+            nn.Linear(ocl1*4, output_channels)
         )
 
     def forward(self, x):
@@ -329,32 +262,9 @@ class HybridFirstFourier_150x150_Fixed(nn.Module):
 
 
 @Model
-class HybridFirstFourier_150x150_Unfixed(nn.Module):
-
-    def __init__(self,
-                 output_channels=10,
-                 input_channels=3,
-                 fixed=False,
-                 **kwargs):
-
-        super().__init__()
-
-        self.expected_input_size = (127, 127)
-
-        self.network = nn.Sequential(
-            DiscreteFourier2dConvBlockHybridMaxPool(127, 127, input_channels, 51, 7, fixed=fixed, padding=3, stride=2),
-            nn.LeakyReLU(),
-            ConvBlock(64, 64, 51, 102, 5, fixed=fixed, padding=2, stride=2),
-            nn.LeakyReLU(),
-            ConvBlock(32, 32, 102, 204, 3, fixed=fixed, padding=1, stride=1),
-            nn.LeakyReLU(),
-            nn.AvgPool2d(kernel_size=32, stride=1),
-            Flatten(),
-            nn.Linear(204, output_channels)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+class HybridFirstFourier_150x150_Unfixed(HybridFirstFourier_150x150_Fixed):
+    def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=23, **kwargs)
 
 
 @Model
