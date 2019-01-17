@@ -7,111 +7,83 @@
 """
 
 import os
+import sys
 from multiprocessing import Process, Queue
 import torch
+from sigopt import Connection
 
-EXPERIMENT_NAME = "ICML"
-LOG_FOLDER = "log"
-NUMBER_EPOCHS = 600
-PROCESSES_PER_GPU = 2
+EXPERIMENT_NAME_PREFIX = "test"
+LOG_FOLDER = "output"
+LOG_FOLDER_LONG = "log"
+NUMBER_EPOCHS_SHORT = 25
+NUMBER_EPOCHS_LONG = 1000
+PROCESSES_PER_GPU = 3
 
-"""
-LEARNING_RATE = 0.001
+MODELS = [
+    "HybridCosineBidirectional_32x32_Fixed",
+    "HybridCosineBidirectional_32x32_Unfixed",
+    "HybridFourierBidirectional_32x32_Fixed",
+    "HybridFourierBidirectional_32x32_Unfixed",
+    "HybridFirstCosine_32x32_Fixed",
+    "HybridFirstCosine_32x32_Unfixed",
+    "HybridFirstFourier_32x32_Fixed",
+    "HybridFirstFourier_32x32_Unfixed",
+    "CosineBidirectional_32x32_Fixed",
+    "CosineBidirectional_32x32_Unfixed",
+    "FourierBidirectional_32x32_Fixed",
+    "FourierBidirectional_32x32_Unfixed",
+    "FirstCosine_32x32_Fixed",
+    "FirstCosine_32x32_Unfixed",
+    "FirstFourier_32x32_Fixed",
+    "FirstFourier_32x32_Unfixed",
+    "PureConv_32x32"
+]
 
-OPTIMIZER = "Adam"
+DATASETS = [
+    #    "/dataset/CIFAR10",
+    "/dataset/ColorectalHist",
+    #    "/dataset/FashionMNIST",
+]
 
-BATCH_SIZE = 64
-"""
-
-"""
-MODELS_150 = ["CosineBidirectional_150x150_Unfixed",
-              "Cosine_150x150_Unfixed",
-              "HybridCosineBidirectional_150x150_Fixed",
-              "HybridCosine_150x150_Unfixed",
-              "Cosine_150x150_Fixed",
-              "HybridFirstCosine_150x150_Fixed",
-              "HybridFourier_150x150_Unfixed",
-              "FirstCosine_150x150_Fixed",
-              "DctIIRandomWeights_150x150",
-              "HybridFirstCosine_150x150_Unfixed",git 
-              "FirstCosine_150x150_Unfixed",
-              "Fourier_150x150_Fixed",
-              "HybridFirstFourier_150x150_Fixed",
-              "Fourier_150x150_Unfixed",
-              "CosineBidirectional_150x150_Fixed",
-              "HybridCosine_150x150_Fixed",
-              "HybridCosineBidirectional_150x150_Unfixed",
-              "HybridFirstFourier_150x150_Unfixed",
-              "FourierBidirectional_150x150_Fixed",
-              "FourierBidirectional_150x150_Unfixed",
-              "PureConv_150x150",
-              "FirstFourier_150x150_Fixed",
-              "HybridFourier_150x150_Fixed",
-              "FirstFourier_150x150_Unfixed"]
-"""
-
-MODELS_32 = ["HybridCosineBidirectional_32x32_Fixed",
-             "HybridCosineBidirectional_32x32_Unfixed",
-             "HybridFourierBidirectional_32x32_Fixed",
-             "HybridFourierBidirectional_32x32_Unfixed",
-             "HybridFirstCosine_32x32_Fixed",
-             "HybridFirstCosine_32x32_Unfixed",
-             "HybridFirstFourier_32x32_Fixed",
-             "HybridFirstFourier_32x32_Unfixed",
-             "CosineBidirectional_32x32_Fixed",
-             "CosineBidirectional_32x32_Unfixed",
-             "FourierBidirectional_32x32_Fixed",
-             "FourierBidirectional_32x32_Unfixed",
-             "FirstCosine_32x32_Fixed",
-             "FirstCosine_32x32_Unfixed",
-             "FirstFourier_32x32_Unfixed",
-             "FirstFourier_32x32_Fixed",
-             "PureConv_32x32"]
-
-DATASETS_32 = ["toy_dataset/CIFAR10",
-               "toy_dataset/FashionMNIST",
-               "toy_dataset/ColorectalHist"]
-
-DATASETS_150 = ["toy_dataset/ColorectalHist"]
-
-
+##########################################################################
+# Creating Experiments
+##########################################################################
 class Experiment(object):
     def __init__(self,
-                 experiment_name,
+                 experiment_name_prefix,
                  model_name,
                  output_folder,
                  dataset_folder,
                  number_epochs,
-                 gpu_index=None,
-                 number_repetitions=1):
-        self.experiment_name = experiment_name
+                 additional,
+                 gpu_index=None,):
+        self.experiment_name_prefix = experiment_name_prefix
         self.model_name = model_name
         self.output_folder = output_folder
         self.dataset_folder = dataset_folder
         self.number_epochs = number_epochs
+        self.additional = additional
         self.gpu_index = gpu_index
-        self.number_repetitions = number_repetitions
 
     def get_cmd(self):
 
-        cmd = "python template/RunMe.py " \
-                   "--experiment-name {EXPERIMENT_NAME:s} " \
-                   "--model {MODEL:s} " \
-                   "--output-folder {OUTPUT_FOLDER:s} " \
-                   "--dataset-folder {DATASET_FOLDER:s} " \
-                   "--ignoregit " \
-                   "--epoch {NUMBER_EPOCHS:d} " \
-                   "--sig-opt-token ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT " \
-                   "--sig-opt-runs 50 " \
-                   "--sig-opt spectralSigOpt.txt".format(
-                EXPERIMENT_NAME=self.experiment_name+'_'+self.model_name+'_'+self.dataset_folder,
-                MODEL=self.model_name,
-                OUTPUT_FOLDER=self.output_folder,
-                DATASET_FOLDER=self.dataset_folder,
-                NUMBER_EPOCHS=self.number_epochs)
+        cmd = "python template/RunMe.py --ignoregit " \
+              "--experiment-name {EXPERIMENT_NAME:s} " \
+              "--model {MODEL:s} " \
+              "--output-folder {OUTPUT_FOLDER:s} " \
+              "--dataset-folder {DATASET_FOLDER:s} " \
+              "--epoch {NUMBER_EPOCHS:d} ".format(
+            EXPERIMENT_NAME=self.experiment_name_prefix + '_' + self.model_name + '_' + self.dataset_folder,
+            MODEL=self.model_name,
+            OUTPUT_FOLDER=self.output_folder,
+            DATASET_FOLDER=self.dataset_folder,
+            NUMBER_EPOCHS=self.number_epochs)
 
         if self.gpu_index is not None:
             cmd = cmd + " --gpu-id {GPU_ID:d} ".format(GPU_ID=self.gpu_index)
+
+        if self.additional:
+            cmd = cmd + self.additional
 
         return cmd
 
@@ -121,17 +93,63 @@ class Experiment(object):
 class ExperimentsBuilder(object):
 
     @staticmethod
-    def build_model_dataset_combinations(model_list, dataset_folders_list, experiment_name, output_folder,
-                                         learning_rate, epochs, number_repetitions=1):
+    def build_sigopt_combinations(model_list, dataset_folders_list, experiment_name_prefix, output_folder, epochs):
         experiments = []
         for model in model_list:
             for dataset in dataset_folders_list:
-                experiment = Experiment(experiment_name, model, output_folder, dataset, learning_rate, epochs,
-                                        number_repetitions=number_repetitions)
+                experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
+                                        "--momentum 0.9 "
+                                        "--sig-opt-token ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT "
+                                        "--sig-opt-runs 20 "
+                                        "--sig-opt spectralSigOpt.txt ")
                 experiments.append(experiment)
         return experiments
 
 
+    @staticmethod
+    def build_longruns_combinations(model_list, dataset_folders_list, experiment_name_prefix, output_folder, epochs):
+        experiments = []
+        for model in model_list:
+            for dataset in dataset_folders_list:
+                best_parameters = ExperimentsBuilder._get_best_parameters(experiment_name_prefix + '_' + model + '_' + dataset)
+
+                experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
+                                        "--momentum 0.9 " \
+                                        "--lr {LR:f} " \
+                                        "--weight-decay {WD:f}".format(
+                                            LR=best_parameters["lr"],
+                                            WD=best_parameters["weight-decay"])
+                                        )
+                experiments.append(experiment)
+        return experiments
+
+    @staticmethod
+    def _retrieve_id_by_name(conn, name):
+        experiment_list = conn.experiments().fetch()
+        retrieved = []
+        for n in experiment_list.data:
+            if name in n.name:
+                retrieved.append(n.id)
+        return retrieved
+
+    @staticmethod
+    def _get_best_parameters(experiment_name):
+        conn = Connection(client_token="ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT")
+        EXPERIMENT_ID = ExperimentsBuilder._retrieve_id_by_name(conn, experiment_name)
+
+        if len(EXPERIMENT_ID) > 1:
+            print("Experiments have duplicate names! Archive older ones before proceeding.")
+            sys.exit(-1)
+        if not EXPERIMENT_ID:
+            print("Experiments not found")
+            sys.exit(-1)
+
+        EXPERIMENT_ID = EXPERIMENT_ID[0]
+        return conn.experiments(EXPERIMENT_ID).best_assignments().fetch().data[0].assignments
+
+##########################################################################
+# Running Experiments
+##########################################################################
 class ExperimentProcess(Process):
     def __init__(self, queue, gpu_idx):
         super().__init__()
@@ -144,34 +162,37 @@ class ExperimentProcess(Process):
             experiment.gpu_index = self.gpu_index
             os.system(experiment.get_cmd())
 
-if __name__ == '__main__':
 
-    print("started...")
-
-    # add experiments with 32x32 input
-    experiments = ExperimentsBuilder.build_model_dataset_combinations(
-        MODELS_32, DATASETS_32, EXPERIMENT_NAME, LOG_FOLDER, NUMBER_EPOCHS,
-    )
-
-    # add experiments with 150x150 inputs
-    # experiments.extend(ExperimentsBuilder.build_model_dataset_combinations(
-    #     MODELS_150, DATASETS_150, EXPERIMENT_NAME, LOG_FOLDER, LEARNING_RATE, OPTIMIZER, NUMBER_EPOCHS, BATCH_SIZE,
-    #     NUMBER_REPETITIONS
-    # ))
-    #
-
-    number_gpus = torch.cuda.device_count()
-
-    queue = Queue()
-    [queue.put(e) for e in experiments]
-
+def run_experiments(number_gpus, processes_per_gpu, queue):
     processes = []
     for i in range(number_gpus):
-        for j in range(PROCESSES_PER_GPU):
+        for j in range(processes_per_gpu):
             process = ExperimentProcess(queue=queue, gpu_idx=i)
             process.start()
             processes.append(process)
-
     [process.join() for process in processes]
+
+
+if __name__ == '__main__':
+    # Init parameter
+    NUM_GPUS = torch.cuda.device_count()
+    # Init queue item
+    queue = Queue()
+
+    print("started...")
+
+    experiments = ExperimentsBuilder.build_sigopt_combinations(
+        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
+    )
+    [queue.put(e) for e in experiments]
+    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+
+    print("...begin phase 2...")
+
+    experiments = ExperimentsBuilder.build_longruns_combinations(
+        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER_LONG, NUMBER_EPOCHS_LONG,
+    )
+    [queue.put(e) for e in experiments]
+    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
 
     print("...finished!")

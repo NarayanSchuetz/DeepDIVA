@@ -184,7 +184,7 @@ class HybridCosineBidirectional_32x32_Fixed(nn.Module):
 
 
 @Model
-class HybridCosineBidirectional_32x32_Unfixed(nn.Module):
+class HybridCosineBidirectional_32x32_Unfixed(HybridCosineBidirectional_32x32_Fixed):
     """
     Network performing cosine transforms.
     32x32 -> DCTII -> iDCTII -> DCTII
@@ -227,7 +227,7 @@ class HybridFourierBidirectional_32x32_Fixed(nn.Module):
 
 
 @Model
-class HybridFourierBidirectional_32x32_Unfixed(nn.Module):
+class HybridFourierBidirectional_32x32_Unfixed(HybridFourierBidirectional_32x32_Fixed):
     """
     Network performing cosine transforms.
     32x32 -> DCTII -> iDCTII -> DCTII

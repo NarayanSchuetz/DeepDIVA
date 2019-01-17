@@ -185,7 +185,7 @@ class CosineBidirectional_32x32_Fixed(nn.Module):
 
 
 @Model
-class CosineBidirectional_32x32_Unfixed(nn.Module):
+class CosineBidirectional_32x32_Unfixed(CosineBidirectional_32x32_Fixed):
     """
     Network performing cosine transforms.
     32x32 -> DCTII -> iDCTII -> DCTII
@@ -229,7 +229,7 @@ class FourierBidirectional_32x32_Fixed(nn.Module):
 
 
 @Model
-class FourierBidirectional_32x32_Unfixed(nn.Module):
+class FourierBidirectional_32x32_Unfixed(FourierBidirectional_32x32_Fixed):
     """
     Network performing cosine transforms.
     32x32 -> Dft -> iDft -> Dft
@@ -426,6 +426,6 @@ class FirstFourier_32x32_Fixed(nn.Module):
 
 
 @Model
-class FirstFourier_32x32_Unfixed(nn.Module):
+class FirstFourier_32x32_Unfixed(FirstFourier_32x32_Fixed):
     def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
         super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=15,**kwargs)
