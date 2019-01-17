@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = ""
+EXPERIMENT_NAME_PREFIX = "test"
 LOG_FOLDER = "output"
 LOG_FOLDER_LONG = "log"
 NUMBER_EPOCHS_SHORT = 25
