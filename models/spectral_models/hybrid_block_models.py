@@ -483,3 +483,98 @@ class HybridFirstFourier_32x32_Unfixed(HybridFirstFourier_32x32_Fixed):
                  **kwargs):
 
         super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, **kwargs)
+
+
+@Model
+class Test(nn.Module):
+    """
+    Network performing cosine transforms.
+    32x32 -> DCTII -> iDCTII -> DCTII
+    """
+
+    def __init__(self,
+                 output_channels=10,
+                 input_channels=3,
+                 fixed=True,
+                 **kwargs):
+
+        super().__init__()
+
+        self.expected_input_size = (32, 32)
+
+        self.network = nn.Sequential(
+            MyDiscreteCosine2dConvBlockHybrid(32, 32, input_channels, 55, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            MyInverseDiscreteCosine2dConvBlockHybrid(32, 32, 55, 110, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            MyDiscreteCosine2dConvBlockHybrid(32, 32, 110, 220, 3, fixed=fixed, padding=1, stride=1),
+            nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=32, stride=1),
+            Flatten(),
+            nn.Linear(220, output_channels)
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+class MyDiscreteCosine2dConvBlockHybrid(nn.Module):
+    """
+    Defines a Discrete Cosine 2D Hybrid Block. It performs Conv -> Cos2D -> DepthConcat -> 1x1 operations on the input.
+    """
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=None,
+                 groups_conv=2):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.cos = DctII2d(width, height, fixed=fixed)
+        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=1)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+
+    def forward(self, x):
+        x = self.conv(x)
+        out = self.cos(x)
+        out = torch.cat((out, x), 1)
+        out = self.pool(out)
+        out = self._1x1(out)
+        return out
+
+
+class MyInverseDiscreteCosine2dConvBlockHybrid(nn.Module):
+    """
+    Defines an inverse Discrete Cosine 2D Hybrid Block. It performs Conv -> iCos2D -> DepthConcat -> 1x1 operations on
+    the input.
+    """
+
+    def __init__(self,
+                 width,
+                 height,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 fixed=False,
+                 kernel_size_pooling=None,
+                 groups_conv=2):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv)
+        self.cos = iDctII2d(width, height, fixed=fixed)
+        self._1x1 = nn.Conv2d(2 * out_channels, out_channels, 1, groups=2)
+        self.pool = nn.MaxPool2d(kernel_size=kernel_size_pooling if kernel_size_pooling is not None else kernel_size)
+
+    def forward(self, x):
+        x = self.conv(x)
+        out = self.cos(x)
+        out = torch.cat((out, x), 1)
+        out = self.pool(out)
+        out = self._1x1(out)
+        return out
