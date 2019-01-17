@@ -426,5 +426,5 @@ class HybridFirstFourier_32x32_Fixed(nn.Module):
 @Model
 class HybridFirstFourier_32x32_Unfixed(HybridFirstFourier_32x32_Fixed):
     def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
-        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=15 **kwargs)
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=15, **kwargs)
 
