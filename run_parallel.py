@@ -12,10 +12,10 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = ""
+EXPERIMENT_NAME_PREFIX = "test"
 LOG_FOLDER = "output"
 LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS_SHORT = 25
+NUMBER_EPOCHS_SHORT = 250
 NUMBER_EPOCHS_LONG = 1000
 PROCESSES_PER_GPU = 4
 
@@ -40,9 +40,10 @@ MODELS = [
 ]
 
 DATASETS = [
-    #    "/dataset/CIFAR10",
-    "/dataset/ColorectalHist",
-    #    "/dataset/FashionMNIST",
+    #"/data/ColorectalHist",
+    #"/data/CIFAR10",
+    #"/data/FashionMNIST",
+    "/data/HisDB/classification/CS18",
 ]
 
 ##########################################################################
@@ -67,7 +68,7 @@ class Experiment(object):
 
     def get_cmd(self):
 
-        cmd = "python template/RunMe.py --ignoregit " \
+        cmd = "python template/RunMe.py --ignoregit --inmem " \
               "--experiment-name {EXPERIMENT_NAME:s} " \
               "--model {MODEL:s} " \
               "--output-folder {OUTPUT_FOLDER:s} " \
@@ -181,11 +182,11 @@ if __name__ == '__main__':
 
     print("started...")
 
-    # experiments = ExperimentsBuilder.build_sigopt_combinations(
-    #     MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
-    # )
-    # [queue.put(e) for e in experiments]
-    # run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+    experiments = ExperimentsBuilder.build_sigopt_combinations(
+        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
+    )
+    [queue.put(e) for e in experiments]
+    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
 
     print("...begin phase 2...")
 
