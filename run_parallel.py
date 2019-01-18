@@ -118,7 +118,7 @@ class ExperimentsBuilder(object):
                                         "--lr {LR:f} " \
                                         "--weight-decay {WD:f}".format(
                                             LR=best_parameters["lr"],
-                                            WD=best_parameters["weight-decay"])
+                                            WD=best_parameters["weight_decay"])
                                         )
                 experiments.append(experiment)
         return experiments
@@ -181,11 +181,11 @@ if __name__ == '__main__':
 
     print("started...")
 
-    experiments = ExperimentsBuilder.build_sigopt_combinations(
-        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
-    )
-    [queue.put(e) for e in experiments]
-    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+    # experiments = ExperimentsBuilder.build_sigopt_combinations(
+    #     MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
+    # )
+    # [queue.put(e) for e in experiments]
+    # run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
 
     print("...begin phase 2...")
 
