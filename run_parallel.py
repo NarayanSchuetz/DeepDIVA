@@ -12,36 +12,36 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = ""
-LOG_FOLDER = "output"
-LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS_SHORT = 25
+EXPERIMENT_NAME_PREFIX = "wo_norm_big"
+LOG_FOLDER = "/media/blob/spectral_experiments_output/log"
+LOG_FOLDER_LONG = "/media/blob/spectral_experiments_output/output"
+NUMBER_EPOCHS_SHORT = 50
 NUMBER_EPOCHS_LONG = 1000
-PROCESSES_PER_GPU = 4
+PROCESSES_PER_GPU = 3
 
 MODELS = [
-    "PureConv_32x32",
-    "HybridCosineBidirectional_32x32_Fixed",
-    "HybridCosineBidirectional_32x32_Unfixed",
-    "HybridFourierBidirectional_32x32_Fixed",
-    "HybridFourierBidirectional_32x32_Unfixed",
-    "HybridFirstCosine_32x32_Fixed",
-    "HybridFirstCosine_32x32_Unfixed",
-    "HybridFirstFourier_32x32_Fixed",
-    "HybridFirstFourier_32x32_Unfixed",
-    "CosineBidirectional_32x32_Fixed",
-    "CosineBidirectional_32x32_Unfixed",
-    "FourierBidirectional_32x32_Fixed",
-    "FourierBidirectional_32x32_Unfixed",
-    "FirstCosine_32x32_Fixed",
-    "FirstCosine_32x32_Unfixed",
-    "FirstFourier_32x32_Fixed",
-    "FirstFourier_32x32_Unfixed",
+    "PureConv_150x150",
+    "HybridCosineBidirectional_150x150_Fixed",
+    "HybridCosineBidirectional_150x150_Unfixed",
+    "HybridFourierBidirectional_150x150_Fixed",
+    "HybridFourierBidirectional_150x150_Unfixed",
+    "HybridFirstCosine_150x150_Fixed",
+    "HybridFirstCosine_150x150_Unfixed",
+    "HybridFirstFourier_150x150_Fixed",
+    "HybridFirstFourier_150x150_Unfixed",
+    "CosineBidirectional_150x150_Fixed",
+    "CosineBidirectional_150x150_Unfixed",
+    "FourierBidirectional_150x150_Fixed",
+    "FourierBidirectional_150x150_Unfixed",
+    "FirstCosine_150x150_Fixed",
+    "FirstCosine_150x150_Unfixed",
+    "FirstFourier_150x150_Fixed",
+    "FirstFourier_150x150_Unfixed",
 ]
 
 DATASETS = [
     #    "/dataset/CIFAR10",
-    "/dataset/ColorectalHist",
+    "/media/blob/ColorectalHist",
     #    "/dataset/FashionMNIST",
 ]
 
@@ -181,11 +181,11 @@ if __name__ == '__main__':
 
     print("started...")
 
-    # experiments = ExperimentsBuilder.build_sigopt_combinations(
-    #     MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
-    # )
-    # [queue.put(e) for e in experiments]
-    # run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+    experiments = ExperimentsBuilder.build_sigopt_combinations(
+         MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
+     )
+    [queue.put(e) for e in experiments]
+    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
 
     print("...begin phase 2...")
 
