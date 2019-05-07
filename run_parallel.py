@@ -1,23 +1,15 @@
-"""
- Created by Narayan Schuetz at 09/01/2019
- University of Bern
- 
- This file is subject to the terms and conditions defined in
- file 'LICENSE.txt', which is part of this source code package.
-"""
-
 import os
 import sys
 from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = "test"
+EXPERIMENT_NAME_PREFIX = "rerun"
 LOG_FOLDER = "output"
 LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS_SHORT = 250
-NUMBER_EPOCHS_LONG = 1000
-PROCESSES_PER_GPU = 4
+NUMBER_EPOCHS_SHORT = 30
+NUMBER_EPOCHS_LONG = 250
+PROCESSES_PER_GPU = 5
 
 MODELS = [
     "PureConv_32x32",
@@ -40,10 +32,10 @@ MODELS = [
 ]
 
 DATASETS = [
-    #"/data/ColorectalHist",
-    #"/data/CIFAR10",
-    #"/data/FashionMNIST",
+    "/data/ColorectalHist",
+    "/data/CIFAR10",
     "/data/HisDB/classification/CS18",
+    "/data/FashionMNIST",
 ]
 
 ##########################################################################
@@ -68,7 +60,7 @@ class Experiment(object):
 
     def get_cmd(self):
 
-        cmd = "python template/RunMe.py --ignoregit --inmem " \
+        cmd = "python template/RunMe.py --ignoregit " \
               "--experiment-name {EXPERIMENT_NAME:s} " \
               "--model {MODEL:s} " \
               "--output-folder {OUTPUT_FOLDER:s} " \
@@ -101,7 +93,7 @@ class ExperimentsBuilder(object):
                 experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
                                         "--momentum 0.9 "
                                         "--sig-opt-token ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT "
-                                        "--sig-opt-runs 20 "
+                                        "--sig-opt-runs 40 "
                                         "--sig-opt spectralSigOpt.txt ")
                 experiments.append(experiment)
         return experiments
