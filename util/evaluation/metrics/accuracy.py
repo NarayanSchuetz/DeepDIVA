@@ -6,7 +6,7 @@ import torch
 def accuracy(predicted, target, topk=(1,)):
     """Computes the accuracy@K for the specified values of K
 
-    From https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    From https://github.com/pytorch/examples/blob/master/imagenet/get_central_pixel_dataset.py
 
     Parameters
     ----------

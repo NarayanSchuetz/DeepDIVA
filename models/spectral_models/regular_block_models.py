@@ -9,7 +9,7 @@
 
 from .parts import *
 import torch.nn as nn
-from .registry import Model
+from models.registry import Model
 
 
 # ----------------------------------------------------------------------------------------------------------------------

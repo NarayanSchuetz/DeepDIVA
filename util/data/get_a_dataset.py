@@ -1,77 +1,39 @@
-
+# Utils
 import argparse
 import inspect
+import numpy as np
 import os
+import pandas as pd
+import rarfile
+import re
+import requests
 import shutil
 import sys
 
-import numpy as np
-import pandas as pd
-import rarfile
+# Torch
 import torch
 import torchvision
+import urllib
 import wget
+import zipfile
 from PIL import Image
 from scipy.io import loadmat as _loadmat
 from sklearn.model_selection import train_test_split as _train_test_split
 
+# DeepDIVA
 from util.data.dataset_splitter import split_dataset
 from util.misc import get_all_files_in_folders_and_subfolders \
     as _get_all_files_in_folders_and_subfolders
 
 
-# Utils
-import argparse
-import inspect
-import os
-import shutil
-import sys
-import requests
-import zipfile
-
-import numpy as np
-import scipy
-
 # Torch
-import torch
-import torchvision
-from PIL import Image
-
-# DeepDIVA
-from util.data.dataset_splitter import split_dataset, split_dataset_train_test_val
 
 
-def hist_colorectal(args):
-    """
-    Fetches and prepares teh hist dataset.
-    :param args:
-    :type args:
-    :return:
-    :rtype:
-    """
-    DIR_NAME = "ColorectalHist"
-    URL = "https://zenodo.org/record/53169/files/Kather_texture_2016_image_tiles_5000.zip?download=1"
-    UNZIPPED_DIR_NAME = "Kather_texture_2016_image_tiles_5000"
+def _make_folder_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-    output_dir = os.path.join(args.output_folder, DIR_NAME)
-    full_path_zipfile = os.path.join(args.output_folder, "hist_tmp.zip")
 
-    _download_file(URL, full_path_zipfile)
-    _unzip_file(full_path_zipfile, output_dir=output_dir)
-    _remove_file(full_path_zipfile)
-
-    full_dir_unzipped = os.path.join(output_dir, UNZIPPED_DIR_NAME)
-
-    labels = _list_subdirs(full_dir_unzipped)
-    for label in labels:
-        label_dir = os.path.join(full_dir_unzipped, label)
-        _convert_images(label_dir)
-
-    split_dataset_train_test_val(
-        dataset_folder=full_dir_unzipped,
-        split=0.2,
-        symbolic=False,
-        target_folder=output_dir)
 
 
 def _convert_images(image_folder, to_format="png", delete=True):
@@ -89,42 +51,6 @@ def _convert_images(image_folder, to_format="png", delete=True):
 
         if delete:
             os.remove(img_path_src)
-
-
-def irmas(args, parts="both"):
-    """
-    Fetches and prepares the IRMAS instrument dataset (https://zenodo.org/record/1290750#.W-2s4S2ZPa5)
-
-    :param args: List of arguments necessary to run this routine. In particular its necessary to provide an
-                 output_folder as String containing the path where the dataset will be downloaded.
-    :type args: dict
-    :param parts: which part to load (train | test | both) default=train
-    :type parts: str
-    :return: None
-    :rtype: None
-    """
-    DIR_NAME = "IRMAS"
-    URL_TRAIN = "https://zenodo.org/record/1290750/files/IRMAS-TrainingData.zip?download=1"
-    URL_TEST_TEMPLATE = "https://zenodo.org/record/1290750/files/IRMAS-TestingData-Part{}.zip?download=1"
-    TEST_PARTS = (1, 2, 3)
-
-    urls = []
-
-    if parts == "train":
-        urls.append(URL_TRAIN)
-    elif parts == "test":
-        urls.extend([URL_TEST_TEMPLATE.format(i) for i in TEST_PARTS])
-    elif parts == "both":
-        urls.append(URL_TRAIN)
-        urls.extend([URL_TEST_TEMPLATE.format(i) for i in TEST_PARTS])
-    else:
-        raise ValueError("argument %s for parameter 'parts' is invalid, use (train | test | both)" % parts)
-
-    for url in urls:
-        full_path_zipfile = os.path.join(args.output_folder, "irmas_tmp.zip")
-        _download_file(url, full_path_zipfile)
-        _unzip_file(full_path_zipfile, os.path.join(args.output_folder, DIR_NAME))
-        _remove_file(full_path_zipfile)
 
 
 def _download_file(url, full_path_out, chunk_size=1024):
@@ -455,9 +381,183 @@ def miml(args):
     return
 
 
-def _make_folder_if_not_exists(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
+
+def diva_hisdb(args):
+    """
+    Fetches and prepares (in a DeepDIVA friendly format) the DIVA HisDB-all dataset for semantic segmentation to the location specified
+    on the file system
+    See also: https://diuf.unifr.ch/main/hisdoc/diva-hisdb
+    Output folder structure: ../HisDB/CB55/train
+                             ../HisDB/CB55/val
+                             ../HisDB/CB55/test
+                             ../HisDB/CB55/test/data -> images
+                             ../HisDB/CB55/test/gt   -> pixel-wise annotated ground truth
+    Parameters
+    ----------
+    args : dict
+        List of arguments necessary to run this routine. In particular its necessary to provide
+        output_folder as String containing the path where the dataset will be downloaded
+    Returns
+    -------
+        None
+    """
+    # make the root folder
+    dataset_root = os.path.join(args.output_folder, 'HisDB')
+    _make_folder_if_not_exists(dataset_root)
+
+    # links to HisDB data sets
+    link_public = urllib.parse.urlparse(
+        'https://diuf.unifr.ch/main/hisdoc/sites/diuf.unifr.ch.main.hisdoc/files/uploads/diva-hisdb/hisdoc/all.zip')
+    link_test_private = urllib.parse.urlparse(
+        'https://diuf.unifr.ch/main/hisdoc/sites/diuf.unifr.ch.main.hisdoc/files/uploads/diva-hisdb/hisdoc/private-test/all-privateTest.zip')
+    download_path_public = os.path.join(dataset_root, link_public.geturl().rsplit('/', 1)[-1])
+    download_path_private = os.path.join(dataset_root, link_test_private.geturl().rsplit('/', 1)[-1])
+
+    # download files
+    print('Downloading {}...'.format(link_public.geturl()))
+    urllib.request.urlretrieve(link_public.geturl(), download_path_public)
+
+    print('Downloading {}...'.format(link_test_private.geturl()))
+    urllib.request.urlretrieve(link_test_private.geturl(), download_path_private)
+    print('Download complete. Unpacking files...')
+
+    # unpack relevant folders
+    zip_file = zipfile.ZipFile(download_path_public)
+
+    # unpack imgs and gt
+    data_gt_zip = {f: re.sub(r'img', 'pixel-level-gt', f) for f in zip_file.namelist() if 'img' in f}
+    dataset_folders = [data_file.split('-')[-1][:-4] for data_file in data_gt_zip.keys()]
+    for data_file, gt_file in data_gt_zip.items():
+        dataset_name = data_file.split('-')[-1][:-4]
+        dataset_folder = os.path.join(dataset_root, dataset_name)
+        _make_folder_if_not_exists(dataset_folder)
+
+        for file in [data_file, gt_file]:
+            zip_file.extract(file, dataset_folder)
+            with zipfile.ZipFile(os.path.join(dataset_folder, file), "r") as zip_ref:
+                zip_ref.extractall(dataset_folder)
+                # delete zips
+                os.remove(os.path.join(dataset_folder, file))
+
+        # create folder structure
+        for partition in ['train', 'val', 'test', 'test-public']:
+            for folder in ['data', 'gt']:
+                _make_folder_if_not_exists(os.path.join(dataset_folder, partition, folder))
+
+    # move the files to the correct place
+    for folder in dataset_folders:
+        for k1, v1 in {'pixel-level-gt': 'gt', 'img': 'data'}.items():
+            for k2, v2 in {'public-test': 'test-public', 'training': 'train', 'validation': 'val'}.items():
+                current_path = os.path.join(dataset_root, folder, k1, k2)
+                new_path = os.path.join(dataset_root, folder, v2, v1)
+                for f in [f for f in os.listdir(current_path) if os.path.isfile(os.path.join(current_path, f))]:
+                    shutil.move(os.path.join(current_path, f), os.path.join(new_path, f))
+            # remove old folders
+            shutil.rmtree(os.path.join(dataset_root, folder, k1))
+
+    # fix naming issue
+    for old, new in {'CS18': 'CSG18', 'CS863': 'CSG863'}.items():
+        os.rename(os.path.join(dataset_root, old), os.path.join(dataset_root, new))
+
+    # unpack private test folders
+    zip_file_private = zipfile.ZipFile(download_path_private)
+
+    data_gt_zip_private = {f: re.sub(r'img', 'pixel-level-gt', f) for f in zip_file_private.namelist() if 'img' in f}
+
+    for data_file, gt_file in data_gt_zip_private.items():
+        dataset_name = re.search('-(.*)-', data_file).group(1)
+        dataset_folder = os.path.join(dataset_root, dataset_name)
+
+        for file in [data_file, gt_file]:
+            zip_file_private.extract(file, dataset_folder)
+            with zipfile.ZipFile(os.path.join(dataset_folder, file), "r") as zip_ref:
+                zip_ref.extractall(os.path.join(dataset_folder, file[:-4]))
+            # delete zip
+            os.remove(os.path.join(dataset_folder, file))
+
+        # create folder structure
+        for folder in ['data', 'gt']:
+            _make_folder_if_not_exists(os.path.join(dataset_folder, 'test', folder))
+
+        for old, new in {'pixel-level-gt': 'gt', 'img': 'data'}.items():
+            current_path = os.path.join(dataset_folder, "{}-{}-privateTest".format(old, dataset_name), dataset_name)
+            new_path = os.path.join(dataset_folder, "test", new)
+            for f in [f for f in os.listdir(current_path) if os.path.isfile(os.path.join(current_path, f))]:
+                shutil.move(os.path.join(current_path, f), os.path.join(new_path, f))
+
+            # remove old folders
+            shutil.rmtree(os.path.dirname(current_path))
+
+    print('Finished. Data set up at {}.'.format(dataset_root))
+
+
+def hist_colorectal(args):
+    """
+    Fetches and prepares teh hist dataset.
+    :param args:
+    :type args:
+    :return:
+    :rtype:
+    """
+    DIR_NAME = "ColorectalHist"
+    URL = "https://zenodo.org/record/53169/files/Kather_texture_2016_image_tiles_5000.zip?download=1"
+    UNZIPPED_DIR_NAME = "Kather_texture_2016_image_tiles_5000"
+
+    output_dir = os.path.join(args.output_folder, DIR_NAME)
+    full_path_zipfile = os.path.join(args.output_folder, "hist_tmp.zip")
+
+    _download_file(URL, full_path_zipfile)
+    _unzip_file(full_path_zipfile, output_dir=output_dir)
+    _remove_file(full_path_zipfile)
+
+    full_dir_unzipped = os.path.join(output_dir, UNZIPPED_DIR_NAME)
+
+    labels = _list_subdirs(full_dir_unzipped)
+    for label in labels:
+        label_dir = os.path.join(full_dir_unzipped, label)
+        _convert_images(label_dir)
+
+    split_dataset_train_test_val(
+        dataset_folder=full_dir_unzipped,
+        split=0.2,
+        symbolic=False,
+        target_folder=output_dir)
+
+
+def irmas(args, parts="both"):
+    """
+    Fetches and prepares the IRMAS instrument dataset (https://zenodo.org/record/1290750#.W-2s4S2ZPa5)
+
+    :param args: List of arguments necessary to run this routine. In particular its necessary to provide an
+                 output_folder as String containing the path where the dataset will be downloaded.
+    :type args: dict
+    :param parts: which part to load (train | test | both) default=train
+    :type parts: str
+    :return: None
+    :rtype: None
+    """
+    DIR_NAME = "IRMAS"
+    URL_TRAIN = "https://zenodo.org/record/1290750/files/IRMAS-TrainingData.zip?download=1"
+    URL_TEST_TEMPLATE = "https://zenodo.org/record/1290750/files/IRMAS-TestingData-Part{}.zip?download=1"
+    TEST_PARTS = (1, 2, 3)
+
+    urls = []
+
+    if parts == "train":
+        urls.append(URL_TRAIN)
+    elif parts == "test":
+        urls.extend([URL_TEST_TEMPLATE.format(i) for i in TEST_PARTS])
+    elif parts == "both":
+        urls.append(URL_TRAIN)
+        urls.extend([URL_TEST_TEMPLATE.format(i) for i in TEST_PARTS])
+    else:
+        raise ValueError("argument %s for parameter 'parts' is invalid, use (train | test | both)" % parts)
+
+    for url in urls:
+        full_path_zipfile = os.path.join(args.output_folder, "irmas_tmp.zip")
+        _download_file(url, full_path_zipfile)
+        _unzip_file(full_path_zipfile, os.path.join(args.output_folder, DIR_NAME))
+        _remove_file(full_path_zipfile)
 
 
 if __name__ == "__main__":

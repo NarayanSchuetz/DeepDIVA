@@ -38,7 +38,7 @@ def _prettyprint_logging_label(logging_label):
 class AverageMeter(object):
     """Computes and stores the average and current value
 
-    From https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    From https://github.com/pytorch/examples/blob/master/imagenet/get_central_pixel_dataset.py
     """
 
     def __init__(self):
@@ -59,7 +59,7 @@ class AverageMeter(object):
     """
     Computes the accuracy@K for the specified values of K
 
-    From https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    From https://github.com/pytorch/examples/blob/master/imagenet/get_central_pixel_dataset.py
 
     Parameters
     ----------
@@ -80,7 +80,7 @@ class AverageMeter(object):
 def adjust_learning_rate(lr, optimizer, epoch, decay_lr_epochs):
     """Sets the learning rate to the initial LR decayed by 10 every N epochs.
 
-    Adapted from https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    Adapted from https://github.com/pytorch/examples/blob/master/imagenet/get_central_pixel_dataset.py
 
     Parameters
     ----------
