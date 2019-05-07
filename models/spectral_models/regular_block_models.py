@@ -71,7 +71,7 @@ class FourierBidirectional_150x150_Fixed(nn.Module):
                  output_channels=8,
                  input_channels=3,
                  fixed=True,
-                 ocl1=32,  # output channels layer 1
+                 ocl1=30,  # output channels layer 1
                  **kwargs):
 
         super().__init__()
@@ -101,7 +101,7 @@ class FourierBidirectional_150x150_Unfixed(FourierBidirectional_150x150_Fixed):
     150x150 -> Dft -> iDft -> Dft
     """
     def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
-        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=20, ** kwargs)
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=28, ** kwargs)
 
 @Model
 class CosineBidirectional_32x32_Fixed(nn.Module):
@@ -229,7 +229,7 @@ class FirstCosine_150x150_Fixed(nn.Module):
 @Model
 class FirstCosine_150x150_Unfixed(FirstCosine_150x150_Fixed):
     def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
-        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=29, ** kwargs)
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=32, ** kwargs)
 
 
 @Model
@@ -255,7 +255,7 @@ class FirstFourier_150x150_Fixed(nn.Module):
             nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=32, stride=1),
             Flatten(),
-            nn.Linear(ocl1*4, output_channels)
+            nn.Linear(ocl1*2, output_channels)
         )
 
     def forward(self, x):
@@ -265,7 +265,7 @@ class FirstFourier_150x150_Fixed(nn.Module):
 @Model
 class FirstFourier_150x150_Unfixed(FirstFourier_150x150_Fixed):
     def __init__(self, output_channels=10, input_channels=3, fixed=False, **kwargs):
-        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=23, ** kwargs)
+        super().__init__(output_channels=output_channels, input_channels=input_channels, fixed=fixed, ocl1=30, ** kwargs)
 
 
 @Model
