@@ -26,7 +26,6 @@ from template.setup import set_up_model, set_up_dataloaders
 from util.misc import checkpoint, adjust_learning_rate
 
 
-
 class ProcessActivation:
     @staticmethod
     def single_run(writer, current_log_folder, model_name, epochs, lr, decay_lr,
@@ -47,7 +46,7 @@ class ProcessActivation:
         if not kwargs['train'] and kwargs['load_model'] == None:
             logging.error('You have to provide load_model argument if model is not trained.')
             sys.exit(-1)
-       
+
         # Get the selected model input size
         model_expected_input_size = models.__dict__[model_name]().expected_input_size
         ProcessActivation._validate_model_input_size(model_expected_input_size, model_name)
@@ -56,8 +55,8 @@ class ProcessActivation:
 
         # Setting up the dataloaders
         train_loader, val_loader, test_loader, num_classes = set_up_dataloaders(
-                                                                model_expected_input_size,
-                                                                **kwargs)
+            model_expected_input_size,
+            **kwargs)
 
         # Freezing the dataset used for processing activation
         activation_dataset = []
@@ -91,7 +90,7 @@ class ProcessActivation:
 
             # Pretraining validation step
             val_value[-1] = ProcessActivation._validate(val_loader, model, criterion, writer, -1, **kwargs)
-            
+
             # Training
             for epoch in range(start_epoch, epochs):
                 train_value[epoch] = ProcessActivation._train(train_loader, model, criterion, optimizer, writer, epoch,
@@ -99,7 +98,8 @@ class ProcessActivation:
 
                 # Validate
                 if epoch % validation_interval == 0:
-                    val_value[epoch] = ProcessActivation._validate(val_loader, model, criterion, writer, epoch, **kwargs)
+                    val_value[epoch] = ProcessActivation._validate(val_loader, model, criterion, writer, epoch,
+                                                                   **kwargs)
 
                 # Activation
                 if (epoch == start_epoch) or (epoch % kwargs['process_every'] == 0) or epoch == (epochs - 1):
@@ -113,7 +113,6 @@ class ProcessActivation:
                                         log_dir=current_log_folder,
                                         checkpoint_all_epochs=checkpoint_all_epochs)
 
-
             # Load the best model before evaluating on the test set.
             logging.info('Loading the best model before evaluating on the test set.')
             kwargs["load_model"] = os.path.join(current_log_folder, 'model_best.pth.tar')
@@ -126,13 +125,12 @@ class ProcessActivation:
             # Test
             test_value = ProcessActivation._test(test_loader, model, criterion, writer, epochs - 1, **kwargs)
             logging.info('Training completed')
-        
+
         # Without training part
         else:
             activation_worker.add_epoch(0, 0, model)
 
         sys.exit(-1)
-
 
     ####################################################################################################################
     @staticmethod
@@ -158,7 +156,6 @@ class ProcessActivation:
                           .format(model_name=model_name,
                                   model_expected_input_size=model_expected_input_size))
             sys.exit(-1)
-
 
     ####################################################################################################################
     """

@@ -27,6 +27,7 @@ def parse_arguments(args=None):
     _training_options(parser)
     _apply_options(parser)
     _optimizer_options(parser)
+    _criterion_options(parser)
     _system_options(parser)
     _triplet_options(parser)
     _process_activation_options(parser)
@@ -54,7 +55,8 @@ def _general_parameters(parser):
     General options
     """
     # List of possible custom runner class. A runner class is defined as a module in template.runner
-    runner_class_options = ["image_classification", "point_cloud", "triplet", "apply_model", "process_activation"]
+    runner_class_options = ["image_classification", "point_cloud", "triplet", "apply_model",
+                            "multi_label_image_classification", "process_activation"]
 
     parser_general = parser.add_argument_group('GENERAL', 'General Options')
     parser_general.add_argument('--experiment-name',
@@ -197,6 +199,11 @@ def _apply_options(parser):
                               type=int,
                               default=None,
                               help='override the number of output channels for loading specific models')
+    parser_apply.add_argument('--ablate',
+                              action='store_true',
+                              default=False,
+                              help='remove the final layer of a given model. Useful to get the 2nd last layer of a '
+                                   'classification model')
 
 
 def _optimizer_options(parser):
@@ -232,6 +239,20 @@ def _optimizer_options(parser):
                                   type=float,
                                   default=0,
                                   help='weight_decay coefficient, also known as L2 regularization')
+
+def _criterion_options(parser):
+    """
+    Options specific for optimizers
+    """
+    # List of possible optimizers already implemented in PyTorch
+    criterion_options = ['CrossEntropyLoss', 'BCEWithLogitsLoss']
+
+    parser_optimizer = parser.add_argument_group('CRITERION', 'Criterion Options')
+
+    parser_optimizer.add_argument('--criterion-name',
+                                  choices=criterion_options,
+                                  default='CrossEntropyLoss',
+                                  help='criterion to be used for training')
 
 
 def _system_options(parser):
@@ -275,9 +296,11 @@ def _triplet_options(parser):
                                 type=float,
                                 default=2.0,
                                 help='the margin value for the triplet loss function')
-    parser_triplet.add_argument('--anchor-swap',
-                                action='store_true',
-                                help='turns on anchor swap')
+    parser_triplet.add_argument('--no-anchor-swap',
+                                dest='anchor_swap',
+                                default=True,
+                                action='store_false',
+                                help='turns off anchor swap')
     parser_triplet.add_argument('--map',
                                 type=str,
                                 default='full',
@@ -286,13 +309,14 @@ def _triplet_options(parser):
                                 type=int,
                                 default=5, metavar='N',
                                 help='re-generate triplets every N epochs')
+    parser_triplet.add_argument('--only-evaluate',
+                                action='store_true',
+                                help='only evaluate on a test set')
 
 
 def _process_activation_options(parser):
     """
     Process activation options
-
-    These parameters are used by the runner class template.runner.triplet
     """
     parser_process = parser.add_argument_group('PROCESS', 'Process Activation Options')
     parser_process.add_argument('--train',

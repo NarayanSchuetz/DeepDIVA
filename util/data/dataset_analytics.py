@@ -34,9 +34,7 @@ Example:
 import argparse
 import logging
 import os
-import sys
 from multiprocessing import Pool
-import cv2
 import numpy as np
 import pandas as pd
 
@@ -44,6 +42,7 @@ import pandas as pd
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from util.misc import load_numpy_image
 
 
 def compute_mean_std(dataset_folder, inmem, workers):
@@ -84,8 +83,13 @@ def compute_mean_std(dataset_folder, inmem, workers):
     else:
         mean, std = cms_online(file_names, workers)
 
-    # Compute class frequencies weights
-    class_frequencies_weights = _get_class_frequencies_weights(train_ds, workers)
+    # Check if the dataset is a multi-label dataset
+    if not os.path.exists(os.path.join(traindir, 'labels.csv')):
+        # Use normal class frequency computation
+        class_frequencies_weights = _get_class_frequencies_weights(train_ds, workers)
+    else:
+        # Use multi-label class frequency computation
+        class_frequencies_weights = _get_class_frequencies_weights_multilabel(os.path.join(traindir, 'labels.csv'))
 
     # Save results as CSV file in the dataset folder
     df = pd.DataFrame([mean, std, class_frequencies_weights])
@@ -95,17 +99,15 @@ def compute_mean_std(dataset_folder, inmem, workers):
 
 # Loads an image with OpenCV and returns the channel wise means of the image.
 def _return_mean(image_path):
-    # NOTE: channels 0 and 2 are swapped because cv2 opens bgr
-    img = cv2.imread(image_path)
-    mean = np.array([np.mean(img[:, :, 2]), np.mean(img[:, :, 1]), np.mean(img[:, :, 0])]) / 255.0
+    img = load_numpy_image(image_path)
+    mean = np.array([np.mean(img[:, :, 0]), np.mean(img[:, :, 1]), np.mean(img[:, :, 2])]) / 255.0
     return mean
 
 
 # Loads an image with OpenCV and returns the channel wise std of the image.
 def _return_std(image_path, mean):
-    # NOTE: channels 0 and 2 are swapped because cv2 opens bgr
-    img = cv2.imread(image_path) / 255.0
-    m2 = np.square(np.array([img[:, :, 2] - mean[0], img[:, :, 1] - mean[1], img[:, :, 0] - mean[2]]))
+    img = load_numpy_image(image_path)
+    m2 = np.square(np.array([img[:, :, 0] - mean[0], img[:, :, 1] - mean[1], img[:, :, 2] - mean[2]]))
     return np.sum(np.sum(m2, axis=1), 1), m2.size / 3.0
 
 
@@ -169,15 +171,14 @@ def cms_inmem(file_names):
     mean : double
     std : double
     """
-    img = np.zeros([file_names.size] + list(cv2.imread(file_names[0]).shape))
+    img = np.zeros([file_names.size] + list(load_numpy_image(file_names[0]).shape))
 
     # Load all samples
     for i, sample in enumerate(file_names):
-        img[i] = cv2.imread(sample)
+        img[i] = load_numpy_image(sample)
 
-    # NOTE: channels 0 and 2 are swapped because cv2 opens bgr
-    mean = np.array([np.mean(img[:, :, :, 2]), np.mean(img[:, :, :, 1]), np.mean(img[:, :, :, 0])]) / 255.0
-    std = np.array([np.std(img[:, :, :, 2]), np.std(img[:, :, :, 1]), np.std(img[:, :, :, 0])]) / 255.0
+    mean = np.array([np.mean(img[:, :, :, 0]), np.mean(img[:, :, :, 1]), np.mean(img[:, :, :, 2])]) / 255.0
+    std = np.array([np.std(img[:, :, :, 0]), np.std(img[:, :, :, 1]), np.std(img[:, :, :, 2])]) / 255.0
 
     return mean, std
 
@@ -221,6 +222,47 @@ def _get_class_frequencies_weights(dataset, workers):
                  .format(class_frequencies=np.around(class_frequencies * 100, decimals=2)))
     # Normalize vector to sum up to 1.0 (in case the Loss function does not do it)
     return (1 / num_samples_per_class) / ((1 / num_samples_per_class).sum())
+
+
+def _get_class_frequencies_weights_multilabel(dataset_labels):
+    """
+    Computes the weights for each class (as required by torch.nn.BCEWithLogitsLoss).
+    The weight for each class is #neg_samples/#pos_samples.
+
+    Parameters
+    ----------
+    dataset_folder: torch.utils.data.dataloader.DataLoader
+        Path to a labels.csv file with labels for each training sample
+
+    Returns
+    -------
+    ndarray[double] of size (num_classes)
+        The weights vector as a 1D array
+    """
+    logging.info('Begin computing class weights')
+
+    labels_df = pd.read_csv(dataset_labels)
+    classes = labels_df.columns
+    labels = labels_df.values
+
+    # Replace all -1 with 0
+    labels[labels == -1] = 0
+
+    # Remove the filenames
+    labels = labels[:, 1:]
+
+    weights = []
+    for i in range(len(labels[0])):
+        pos = len(np.where(labels[:, i] == 1)[0])
+        neg = len(labels) - pos
+        weight = neg / pos
+        weights.append(weight)
+
+    weights = np.array(weights)
+
+    logging.info('Finished computing class weights')
+    logging.info('Class weights (rounded): {}'.format(np.around(weights, decimals=2)))
+    return weights
 
 
 if __name__ == "__main__":

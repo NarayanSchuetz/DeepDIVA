@@ -12,7 +12,6 @@ from copy import deepcopy
 from tqdm import tqdm
 
 
-
 class Activation:
     def __init__(self, log_folder, model_name, dataset, process_size, save_cover, no_cuda):
         """
@@ -47,7 +46,6 @@ class Activation:
 
         self.store = OrderedDict()
 
-
     def init(self, model):
         """
         This method initialize internal global according to model passed.
@@ -63,32 +61,31 @@ class Activation:
             None
         """
         logging.info('Creating activation directories')
-        
+
         os.mkdir(self.log_folder)
         os.mkdir(self.data_folder)
         if self.save_cover:
             os.mkdir(self.cover_folder)
-        
+
         logging.info('Init manifest structure')
         # Get sample dataset image
         self.sample_image = next(enumerate(self.dataset))[1][0]
         if not self.no_cuda:
             self.sample_image = Variable(self.sample_image.cuda())
-        
+
         # Extract model's shape
         shape = Activation._capture_activations(model, self.sample_image, self.no_cuda, False)
 
         # Init value in global store
         self.store['datetime'] = datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
         self.store['version'] = 2
-        
+
         self.store['model'] = OrderedDict()
         self.store['model']['name'] = self.model_name
         self.store['model']['layers'] = shape
 
         self.store['items'] = OrderedDict()
         self.store['epochs'] = OrderedDict()
-
 
     def resolve_items(self):
         """
@@ -116,7 +113,7 @@ class Activation:
         if self.save_cover:
             pass
             # default icon ? how to ?
-        
+
         for i, (image, label) in enumerate(self.dataset):
             # break policy
             if i >= self.process_size:
@@ -155,7 +152,6 @@ class Activation:
 
         self._save()
 
-
     def add_epoch(self, epoch_number, epoch_accuracy, model):
         """
         This method collect, compute and save all activation data (and mean activation
@@ -175,19 +171,19 @@ class Activation:
             None
         """
         logging.info('Processing images for epoch {}'.format(epoch_number))
-        
+
         # Create epoch folder
         epoch_name = 'epoch' + str(epoch_number)
         epoch_folder = os.path.join(self.data_folder, epoch_name)
         os.mkdir(epoch_folder)
-        
+
         # Create epoch entry in manifest
         self.store['epochs'][epoch_number] = OrderedDict()
         self.store['epochs'][epoch_number]['number'] = epoch_number
         self.store['epochs'][epoch_number]['accuracy'] = epoch_accuracy
         self.store['epochs'][epoch_number]['folder'] = os.path.join('/', epoch_name)
         self.store['epochs'][epoch_number]['datetime'] = datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        
+
         # Collect activations
         activations = self._process(model)
 
@@ -208,7 +204,7 @@ class Activation:
                     if 'filters' in lval:
                         for fkey, fval in lval['filters'].items():
                             classes[index]['layers'][lkey]['filters'][fkey] = (
-                                fval + activations[i]['layers'][lkey]['filters'][fkey]
+                                    fval + activations[i]['layers'][lkey]['filters'][fkey]
                             )
 
             # Add in general array
@@ -220,7 +216,7 @@ class Activation:
                     if 'filters' in lval:
                         for fkey, fval in lval['filters'].items():
                             general[0]['layers'][lkey]['filters'][fkey] = (
-                                fval + activations[i]['layers'][lkey]['filters'][fkey]
+                                    fval + activations[i]['layers'][lkey]['filters'][fkey]
                             )
 
         for ckey, cval in classes.items():
@@ -230,7 +226,7 @@ class Activation:
                 if 'filters' in lval:
                     for fkey, fval in lval['filters'].items():
                         classes[ckey]['layers'][lkey]['filters'][fkey] = (
-                            classes[ckey]['layers'][lkey]['filters'][fkey] / item_info['size']
+                                classes[ckey]['layers'][lkey]['filters'][fkey] / item_info['size']
                         )
 
         for gkey, gval in general.items():
@@ -240,7 +236,7 @@ class Activation:
                 if 'filters' in lval:
                     for fkey, fval in lval['filters'].items():
                         general[gkey]['layers'][lkey]['filters'][fkey] = (
-                            general[gkey]['layers'][lkey]['filters'][fkey] / item_info['size']
+                                general[gkey]['layers'][lkey]['filters'][fkey] / item_info['size']
                         )
 
         for i in activations:
@@ -263,7 +259,6 @@ class Activation:
 
         self._save()
 
-
     def _save(self):
         """
         Write global internal storage on the disk.
@@ -281,10 +276,8 @@ class Activation:
         with open(manifest_path, 'w') as out:
             json.dump(self.store, out, indent=2)
 
-
     def _get_item_info(self, store_type, index):
         return self.store['items'][store_type][index]
-
 
     def _process(self, model):
         images = OrderedDict()
@@ -305,8 +298,6 @@ class Activation:
 
             input_index = str(i)
             input_class = int(label[0])
-
-            
 
             layers = Activation._capture_activations(model, image, self.no_cuda, True)
 
@@ -331,14 +322,14 @@ class Activation:
             store[layer_name] = OrderedDict()
 
             if not store_filters:
-                store[layer_name]['type'] = str(layer) # TODO: store something cleaner
+                store[layer_name]['type'] = str(layer)  # TODO: store something cleaner
                 store[layer_name]['dim'] = layer_dim
                 store[layer_name]['size'] = data_input.size()[1]
 
             if store_filters:
                 numpy_filter = np.array([])
                 store[layer_name]['filters'] = OrderedDict()
-                
+
                 if layer_dim == 4:
                     # dimension 1 is for the mini-batch
                     for f in range(0, data_input.size()[1]):

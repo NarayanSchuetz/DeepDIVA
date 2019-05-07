@@ -3,7 +3,7 @@ Convolutional Auto Encoder with 3 conv layers and a fully connected classificati
 """
 
 import torch.nn as nn
-
+from models.registry import Model
 
 class Flatten(nn.Module):
     """
@@ -18,6 +18,7 @@ class Flatten(nn.Module):
         return x
 
 
+@Model
 class CAE_basic(nn.Module):
     """
     Simple convolutional auto-encoder neural network
@@ -115,7 +116,7 @@ class CAE_basic(nn.Module):
                       kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(),
-            #nn.Tanh(),
+            # nn.Tanh(),
         )
         # In: 32x32 Out: 96x96
         self.dec_conv5 = nn.Sequential(
@@ -127,7 +128,7 @@ class CAE_basic(nn.Module):
         )
         # Hydra heads
         self.hydra = nn.ModuleList(
-            [nn.Sequential(Flatten(), nn.Linear(4*4*32, output_channels)) for _ in range(self.heads_count)]
+            [nn.Sequential(Flatten(), nn.Linear(4 * 4 * 32, output_channels)) for _ in range(self.heads_count)]
         )
 
     def encoder(self, x):

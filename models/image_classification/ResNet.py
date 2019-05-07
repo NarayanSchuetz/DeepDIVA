@@ -7,8 +7,7 @@ import math
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
-__all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
-           'resnet152']
+from models.registry import Model
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -98,11 +97,12 @@ class _Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, output_channels=1000):
+    def __init__(self, block, layers, output_channels=1000, ablate=False, **kwargs):
         self.inplanes = 64
         super(ResNet, self).__init__()
 
         self.expected_input_size = (224, 224)
+        self.ablate = ablate
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
@@ -114,7 +114,8 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, output_channels)
+        if not ablate:
+            self.fc = nn.Linear(512 * block.expansion, output_channels)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -154,11 +155,14 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        if self.ablate:
+            return x
+        else:
+            x = self.fc(x)
+            return x
 
-        return x
 
-
+@Model
 def resnet18(pretrained=False, **kwargs):
     """Constructs a _ResNet-18 model.
 
@@ -174,6 +178,7 @@ def resnet18(pretrained=False, **kwargs):
     return model
 
 
+@Model
 def resnet34(pretrained=False, **kwargs):
     """Constructs a _ResNet-34 model.
 
@@ -189,6 +194,7 @@ def resnet34(pretrained=False, **kwargs):
     return model
 
 
+@Model
 def resnet50(pretrained=False, **kwargs):
     """Constructs a _ResNet-50 model.
 
@@ -204,6 +210,7 @@ def resnet50(pretrained=False, **kwargs):
     return model
 
 
+@Model
 def resnet101(pretrained=False, **kwargs):
     """Constructs a _ResNet-101 model.
 
@@ -219,6 +226,7 @@ def resnet101(pretrained=False, **kwargs):
     return model
 
 
+@Model
 def resnet152(pretrained=False, **kwargs):
     """Constructs a _ResNet-152 model.
 

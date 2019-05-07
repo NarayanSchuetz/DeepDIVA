@@ -1,26 +1,23 @@
-import torch
 import torch.nn as nn
-import torch.utils as utils
-import torch.nn.init as init
-import torch.utils.data as data
-import torchvision.utils as v_utils
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
-from torch.autograd import Variable
+from models.registry import Model
+import torch.nn as nn
+
+from models.registry import Model
+
 
 class Conv_residual_conv(nn.Module):
 
-    def __init__(self,in_dim,out_dim,act_fn):
-        super(Conv_residual_conv,self).__init__()
+    def __init__(self, in_dim, out_dim, act_fn):
+        super(Conv_residual_conv, self).__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         act_fn = act_fn
 
-        self.conv_1 = conv_block(self.in_dim,self.out_dim,act_fn)
-        self.conv_2 = conv_block_3(self.out_dim,self.out_dim,act_fn)
-        self.conv_3 = conv_block(self.out_dim,self.out_dim,act_fn)
+        self.conv_1 = conv_block(self.in_dim, self.out_dim, act_fn)
+        self.conv_2 = conv_block_3(self.out_dim, self.out_dim, act_fn)
+        self.conv_3 = conv_block(self.out_dim, self.out_dim, act_fn)
 
-    def forward(self,input):
+    def forward(self, input):
         conv_1 = self.conv_1(input)
         conv_2 = self.conv_2(conv_1)
         res = conv_1 + conv_2
@@ -28,9 +25,10 @@ class Conv_residual_conv(nn.Module):
         return conv_3
 
 
+@Model
 class FusionNet(nn.Module):
 
-    def __init__(self,input_nc, output_nc, ngf):
+    def __init__(self, input_nc, output_nc, ngf, **kwargs):
         super(FusionNet, self).__init__()
         self.in_dim = input_nc
         self.out_dim = ngf
@@ -68,7 +66,7 @@ class FusionNet(nn.Module):
 
         # output
 
-        self.out = nn.Conv2d(self.out_dim,self.final_out_dim, kernel_size=3, stride=1, padding=1)
+        self.out = nn.Conv2d(self.out_dim, self.final_out_dim, kernel_size=3, stride=1, padding=1)
         self.out_2 = nn.Tanh()
         '''
         self.out = nn.Sequential(
@@ -84,13 +82,12 @@ class FusionNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 m.weight.data.normal_(0.0, 0.02)
                 m.bias.data.fill_(0)
-            
+
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.normal_(1.0, 0.02)
                 m.bias.data.fill_(0)
 
-
-    def forward(self,input):
+    def forward(self, input):
 
         down_1 = self.down_1(input)
         pool_1 = self.pool_1(down_1)
@@ -104,37 +101,37 @@ class FusionNet(nn.Module):
         bridge = self.bridge(pool_4)
 
         deconv_1 = self.deconv_1(bridge)
-        skip_1 = (deconv_1 + down_4)/2
+        skip_1 = (deconv_1 + down_4) / 2
         up_1 = self.up_1(skip_1)
         deconv_2 = self.deconv_2(up_1)
-        skip_2 = (deconv_2 + down_3)/2
+        skip_2 = (deconv_2 + down_3) / 2
         up_2 = self.up_2(skip_2)
         deconv_3 = self.deconv_3(up_2)
-        skip_3 = (deconv_3 + down_2)/2
+        skip_3 = (deconv_3 + down_2) / 2
         up_3 = self.up_3(skip_3)
         deconv_4 = self.deconv_4(up_3)
-        skip_4 = (deconv_4 + down_1)/2
+        skip_4 = (deconv_4 + down_1) / 2
         up_4 = self.up_4(skip_4)
 
         out = self.out(up_4)
         out = self.out_2(out)
-        #out = torch.clamp(out, min=-1, max=1)
+        # out = torch.clamp(out, min=-1, max=1)
 
         return out
 
 
-def conv_block(in_dim,out_dim,act_fn):
+def conv_block(in_dim, out_dim, act_fn):
     model = nn.Sequential(
-        nn.Conv2d(in_dim,out_dim, kernel_size=3, stride=1, padding=1),
+        nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=1, padding=1),
         nn.BatchNorm2d(out_dim),
         act_fn,
     )
     return model
 
 
-def conv_trans_block(in_dim,out_dim,act_fn):
+def conv_trans_block(in_dim, out_dim, act_fn):
     model = nn.Sequential(
-        nn.ConvTranspose2d(in_dim,out_dim, kernel_size=3, stride=2, padding=1,output_padding=1),
+        nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, output_padding=1),
         nn.BatchNorm2d(out_dim),
         act_fn,
     )
@@ -146,20 +143,20 @@ def maxpool():
     return pool
 
 
-def conv_block_2(in_dim,out_dim,act_fn):
+def conv_block_2(in_dim, out_dim, act_fn):
     model = nn.Sequential(
-        conv_block(in_dim,out_dim,act_fn),
-        nn.Conv2d(out_dim,out_dim, kernel_size=3, stride=1, padding=1),
+        conv_block(in_dim, out_dim, act_fn),
+        nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
         nn.BatchNorm2d(out_dim),
     )
     return model
 
 
-def conv_block_3(in_dim,out_dim,act_fn):
+def conv_block_3(in_dim, out_dim, act_fn):
     model = nn.Sequential(
-        conv_block(in_dim,out_dim,act_fn),
-        conv_block(out_dim,out_dim,act_fn),
-        nn.Conv2d(out_dim,out_dim, kernel_size=3, stride=1, padding=1),
+        conv_block(in_dim, out_dim, act_fn),
+        conv_block(out_dim, out_dim, act_fn),
+        nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
         nn.BatchNorm2d(out_dim),
     )
     return model

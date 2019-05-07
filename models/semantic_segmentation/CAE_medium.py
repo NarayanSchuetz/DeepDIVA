@@ -3,7 +3,7 @@ Convolutional Auto Encoder with 3 conv layers and a fully connected classificati
 """
 
 import torch.nn as nn
-import torch.nn.functional as F
+from models.registry import Model
 
 class Flatten(nn.Module):
     """
@@ -12,11 +12,13 @@ class Flatten(nn.Module):
     Replaces the flattening line (view) often found into forward() methods of networks. This makes it
     easier to navigate the network with introspection
     """
+
     def forward(self, x):
         x = x.view(x.size()[0], -1)
         return x
 
 
+@Model
 class CAE_medium(nn.Module):
     """
     Simple convolutional auto-encoder neural network
@@ -74,14 +76,13 @@ class CAE_medium(nn.Module):
             nn.Upsample(scale_factor=2, mode='bilinear')
         )
 
-
         self.conv5 = nn.Sequential(
             nn.Conv2d(256, 64, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
             nn.Upsample(scale_factor=2, mode='bilinear')
         )
 
-        self.conv6 =nn.Sequential(
+        self.conv6 = nn.Sequential(
             nn.Conv2d(64, 3, kernel_size=1, stride=1, padding=0),
             nn.Tanh(),
         )
@@ -97,7 +98,6 @@ class CAE_medium(nn.Module):
         x = self.conv5(x)
         x = self.conv6(x)
         return x
-
 
     def forward(self, x):
         """

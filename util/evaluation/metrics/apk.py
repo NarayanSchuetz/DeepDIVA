@@ -33,18 +33,24 @@ def apk(query, predicted, k='full'):
         Average Precision@k
 
     """
-    if k == 'auto':
-        k = predicted.count(query)
-    elif k == 'full':
-        k = len(predicted)
+    assert (len(predicted) > 0)
 
-    if k == 0 or len(predicted) == 0:
+    # Count the number of relevant items that could be retrieved
+    num_hits = predicted.count(query)
+    if num_hits == 0:
         return 0
 
-    if len(predicted) > k:
-        predicted = predicted[:k]
+    # Resolve k in case is not a number
+    if k == 'auto':
+        k = num_hits
+    elif k == 'full':
+        k = len(predicted)
+    else:
+        assert isinstance(k, int)
+    assert (k > 0) and (k <= len(predicted))
 
-    predicted = np.array(predicted)
+    # Truncate the list to the number of desired elements which gets taken into account
+    predicted = np.array(predicted[:k])
 
     # Non-vectorized version.
     # score = 0.0  # The score is the precision@i integrated over i=1:k
@@ -55,7 +61,7 @@ def apk(query, predicted, k='full'):
     #         num_hits += 1.0
     #         score += num_hits / (i + 1.0)
     #
-    # return score / k
+    # return score / k_or_num_hits
 
     # Make an empty array for relevant queries.
     relevant = np.zeros(len(predicted))
@@ -73,7 +79,7 @@ def apk(query, predicted, k='full'):
     # Divide element-wise by [0/1,1/2,0/3,2/4,0/5,3/6] and sum the array.
     score = np.sum(np.divide(relevant, np.arange(1, relevant.shape[0] + 1)))
 
-    return score / k
+    return score / min(k, num_hits)
 
 
 def mapk(query, predicted, k=None, workers=1):
@@ -154,7 +160,7 @@ def compute_mapk(distances, labels, k, workers=None):
 
     # Fetch the index of the lowest `max_count` (k) elements
     t = time.time()
-    ind = np.argpartition(distances, max_count)[:, :max_count]
+    ind = np.argpartition(distances, max_count - 1)[:, :max_count]
     # Find the sorting sequence according to the shortest distances selected from `ind`
     ssd = np.argsort(np.array(distances)[np.arange(distances.shape[0])[:, None], ind], axis=1)
     # Consequently sort `ind`

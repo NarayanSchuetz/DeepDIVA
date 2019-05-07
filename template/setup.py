@@ -1,18 +1,18 @@
 # Utils
+import colorlog
 import inspect
 import json
 import logging
+import numpy as np
 import os
+import pandas as pd
 import random
 import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
 import time
-
-import colorlog
-import numpy as np
-import pandas as pd
 # Torch related stuff
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -30,9 +30,9 @@ from util.data.dataset_integrity import verify_integrity_quick, verify_integrity
 from util.misc import get_all_files_in_folders_and_subfolders
 
 
-def set_up_model(output_channels, model_name, pretrained, optimizer_name, no_cuda, resume, load_model,
+def set_up_model(output_channels, model_name, pretrained, optimizer_name, criterion_name, no_cuda, resume, load_model,
                  start_epoch, disable_databalancing, dataset_folder, inmem, workers, num_classes=None,
-                 **kwargs):
+                 ablate=False, **kwargs):
     """
     Instantiate model, optimizer, criterion. Load a pretrained model or resume from a checkpoint.
 
@@ -46,6 +46,8 @@ def set_up_model(output_channels, model_name, pretrained, optimizer_name, no_cud
         Specify whether to load a pretrained model or not
     optimizer_name : string
         Name of the optimizer
+     criterion_name : string
+        Name of the criterion
     no_cuda : bool
         Specify whether to use the GPU or not
     resume : string
@@ -65,6 +67,8 @@ def set_up_model(output_channels, model_name, pretrained, optimizer_name, no_cud
         Number of workers to use for the dataloaders
     num_classes: int
         Number of classes for the model
+    ablate : boolean
+        If True, remove the final layer of the given model.
 
     Returns
     -------
@@ -86,22 +90,12 @@ def set_up_model(output_channels, model_name, pretrained, optimizer_name, no_cud
     logging.info('Setting up model {}'.format(model_name))
 
     output_channels = output_channels if num_classes == None else num_classes
-    model = models.__dict__[model_name](output_channels=output_channels, pretrained=pretrained)
+    model = models.__dict__[model_name](output_channels=output_channels, pretrained=pretrained, ablate=ablate)
 
     # Get the optimizer created with the specified parameters in kwargs (such as lr, momentum, ... )
     optimizer = _get_optimizer(optimizer_name, model, **kwargs)
 
-    # Get the criterion
-    if disable_databalancing:
-        criterion = nn.CrossEntropyLoss()
-    else:
-        try:
-            weights = _load_class_frequencies_weights_from_file(dataset_folder, inmem, workers)
-            criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(weights).type(torch.FloatTensor))
-            logging.info('Loading weights for data balancing')
-        except:
-            logging.warning('Unable to load information for data balancing. Using normal criterion')
-            criterion = nn.CrossEntropyLoss()
+    criterion = _get_criterion(criterion_name, disable_databalancing, dataset_folder, inmem, workers)
 
     # Transfer model to GPU (if desired)
     if not no_cuda:
@@ -165,7 +159,7 @@ def _load_class_frequencies_weights_from_file(dataset_folder, inmem, workers):
         Class frequencies for the selected dataset, contained in the analytics.csv file.
     """
     csv_file = _load_analytics_csv(dataset_folder, inmem, workers)
-    return csv_file.ix[2, 1:].as_matrix().astype(float)
+    return csv_file.ix[2, 1:].values.astype(float)
 
 
 def _get_optimizer(optimizer_name, model, **kwargs):
@@ -200,8 +194,48 @@ def _get_optimizer(optimizer_name, model, **kwargs):
     return torch.optim.__dict__[optimizer_name](model.parameters(), **params)
 
 
+def _get_criterion(criterion_name, disable_databalancing, dataset_folder, inmem, workers):
+    """
+    This function serves as an interface between the command line and the criterion.
+
+    Parameters
+    ----------
+     criterion_name : string
+        Name of the criterion
+    disable_databalancing : boolean
+        If True the criterion will not be fed with the class frequencies. Use with care.
+    dataset_folder : String
+        Location of the dataset on the file system
+    inmem : boolean
+        Load the whole dataset in memory. If False, only file names are stored and images are loaded
+        on demand. This is slower than storing everything in memory.
+    workers : int
+        Number of workers to use for the dataloaders
+
+    Returns
+    -------
+    torch.nn
+        The initalized criterion
+
+    """
+    # Verify that the criterion exists
+    assert criterion_name in torch.nn.__dict__
+
+    # Instantiate the criterion
+    criterion = torch.nn.__dict__[criterion_name]()
+
+    if not disable_databalancing:
+        try:
+            logging.info('Loading weights for data balancing')
+            weights = _load_class_frequencies_weights_from_file(dataset_folder, inmem, workers)
+            criterion.weight = torch.from_numpy(weights).type(torch.FloatTensor)
+        except:
+            logging.warning('Unable to load information for data balancing. Using normal criterion')
+    return criterion
+
+
 def set_up_dataloaders(model_expected_input_size, dataset_folder, batch_size, workers,
-                       disable_dataset_integrity, enable_deep_dataset_integrity,  inmem=False, **kwargs):
+                       disable_dataset_integrity, enable_deep_dataset_integrity, inmem=False, **kwargs):
     """
     Set up the dataloaders for the specified datasets.
 
@@ -351,8 +385,8 @@ def _load_mean_std_from_file(dataset_folder, inmem, workers):
     # Loads the analytics csv and extract mean and std
     try:
         csv_file = _load_analytics_csv(dataset_folder, inmem, workers)
-        mean = np.asarray(csv_file.ix[0, 1:3])
-        std = np.asarray(csv_file.ix[1, 1:3])
+        mean = csv_file.ix[0, 1:3].values.astype(float)
+        std = csv_file.ix[1, 1:3].values.astype(float)
     except KeyError:
         import sys
         logging.error('analytics.csv located in {} incorrectly formed. '
@@ -490,7 +524,8 @@ def set_up_logging(parser, experiment_name, output_folder, quiet, args_dict, deb
     for group in parser._action_groups[2:]:
         if group.title not in ['GENERAL', 'DATA']:
             for action in group._group_actions:
-                if (kwargs[action.dest] is not None) and (kwargs[action.dest] != action.default) and action.dest != 'load_model':
+                if (kwargs[action.dest] is not None) and (
+                        kwargs[action.dest] != action.default) and action.dest != 'load_model':
                     non_default_parameters.append(str(action.dest) + "=" + str(kwargs[action.dest]))
 
     # Build up final logging folder tree with the non-default training parameters
@@ -534,6 +569,10 @@ def set_up_logging(parser, experiment_name, output_folder, quiet, args_dict, deb
     logging.info('Arguments saved to: {}'.format(os.path.join(log_folder, 'args.txt')))
     with open(os.path.join(log_folder, 'args.txt'), 'w') as f:
         f.write(json.dumps(args_dict))
+
+    # Save all environment packages to logs_folder
+    environment_yml = os.path.join(log_folder, 'environment.yml')
+    subprocess.call('conda env export > {}'.format(environment_yml), shell=True)
 
     # Define Tensorboard SummaryWriter
     logging.info('Initialize Tensorboard SummaryWriter')
@@ -605,9 +644,17 @@ def set_up_env(gpu_id, seed, multi_run, no_cuda, **kwargs):
     -------
         None
     """
+
     # Set visible GPUs
     if gpu_id is not None:
         os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
+
+    # Check if GPU's are available
+    gpu_available = torch.cuda.is_available()
+    if not gpu_available and not no_cuda:
+        logging.warning('There are no GPUs available on this system, or your NVIDIA drivers are outdated.')
+        logging.warning('Switch to CPU only computation using --no-cuda.')
+        sys.exit(-1)
 
     # Seed the random
     if seed is None:
@@ -637,6 +684,4 @@ def set_up_env(gpu_id, seed, multi_run, no_cuda, **kwargs):
     # Torch random
     torch.manual_seed(seed)
     if not no_cuda:
-
         torch.cuda.manual_seed_all(seed)
-
