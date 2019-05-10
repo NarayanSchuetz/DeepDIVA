@@ -6,7 +6,7 @@ from models.registry import Model
 @Model
 class BaselineConv(nn.Module):
 
-    def __init__(self, output_channels, in_channels=3, ocl1=32,  # output channels layer 1
+    def __init__(self, output_channels=10, in_channels=3, ocl1=32,  # output channels layer 1
                  **kwargs):
         super().__init__()
 
