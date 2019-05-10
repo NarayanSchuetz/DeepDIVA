@@ -126,8 +126,10 @@ class RunMe:
             experiment = conn.experiments().create(
                 name=args.experiment_name,
                 parameters=parameters,
-                observation_budget=args.sig_opt_runs
+                observation_budget=args.sig_opt_runs,
+                project=args.sig_opt_project,
             )
+
             logging.info("Created experiment: https://sigopt.com/experiment/" + experiment.id)
             for i in range(args.sig_opt_runs):
                 # Get suggestion from SigOpt
@@ -139,11 +141,11 @@ class RunMe:
                     args.__dict__[key] = params[key]
                 _, _, score = self._execute(args)
                 # In case of multi-run the return type will be a list (otherwise is a single float)
-                if type(score.item()) != float:
-                    [conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=item.team())
+                if type(score) != float:
+                    [conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=item)
                      for item in score]
                 else:
-                    conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=score.item())
+                    conn.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=score)
         return None, None, None
 
     def _run_manual_optimization(self, args):
@@ -328,7 +330,7 @@ class RunMe:
                                         title='Runs: {}'.format(i + 1),
                                         xlabel='Epoch', ylabel='Score',
                                         ylim=[0, 100.0])
-            save_image_and_log_to_tensorboard(writer, tag='train_curve', image=train_curve, global_step=i)
+            save_image_and_log_to_tensorboard(writer, tag='train_curve', image_tensor=train_curve, global_step=i)
             logging.info('Generated mean-variance plot for train')
 
             # Generate and add to tensorboard the shaded plot for va
@@ -338,7 +340,7 @@ class RunMe:
                                       title='Runs: {}'.format(i + 1),
                                       xlabel='Epoch', ylabel='Score',
                                       ylim=[0, 100.0])
-            save_image_and_log_to_tensorboard(writer, tag='val_curve', image=val_curve, global_step=i)
+            save_image_and_log_to_tensorboard(writer, tag='val_curve', image_tensor=val_curve, global_step=i)
             logging.info('Generated mean-variance plot for val')
 
         # Log results on disk

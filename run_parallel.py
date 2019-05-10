@@ -15,19 +15,20 @@ RUNS_PER_MODEL = 1
 PROCESSES_PER_GPU = 4
 
 MODELS = [
-    "BaselineConv",#validated
-    "BaselineRND",#validated
-    "DCTFirst",#validated
-    "DCTFirst_Fixed",#validated
-    "FFTFirst", #validated
-    "FFTFirst_Fixed", #validated
-    "DCTBidir",#validated
-    "DCTBidir_Fixed",#validated
+    "BaselineConv",
+    "BaselineRND",
+    "DCTFirst",
+    "DCTFirst_Fixed",
+    "FFTFirst",
+    "FFTFirst_Fixed",
+    "DCTBidir",
+    "DCTBidir_Fixed",
     "FFTBidir",
     "FFTBidir_Fixed",
 ]
 
 DATASETS = [
+    #"/net/dataset/albertim/ColorectalHist",
     "/net/dataset/albertim/ColorectalHist",
 ]
 
