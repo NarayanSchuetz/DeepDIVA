@@ -29,7 +29,8 @@ def print_with_pattern(experiment_list, name):
 
 if __name__ == '__main__':
 
-    conn = Connection(client_token="ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT")
+    conn = Connection(client_token="YEQGRJZHNJMNHHZTDJIQKOXILQCSHZVFWWJIIWYNSWKQPGOA") # production
+    conn = Connection(client_token="UQOOVYGGZNNDDFUAQQCCGMVNLVATTXDFKTXFXWIYUGRMJQHW") # dev
 
     # Fetch all experiments
     experiment_list = []

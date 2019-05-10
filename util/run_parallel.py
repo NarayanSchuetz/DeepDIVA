@@ -4,38 +4,31 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-EXPERIMENT_NAME_PREFIX = "rerun"
+#SIGOPT_TOKEN = "YEQGRJZHNJMNHHZTDJIQKOXILQCSHZVFWWJIIWYNSWKQPGOA"  # production
+SIGOPT_TOKEN = "UQOOVYGGZNNDDFUAQQCCGMVNLVATTXDFKTXFXWIYUGRMJQHW"  # dev
+
+EXPERIMENT_NAME_PREFIX = "dev"
 LOG_FOLDER = "output"
-LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS_SHORT = 30
-NUMBER_EPOCHS_LONG = 250
-PROCESSES_PER_GPU = 5
+# LOG_FOLDER_LONG = "log"
+NUMBER_EPOCHS = 30
+RUNS_PER_MODEL = 1
+PROCESSES_PER_GPU = 4
 
 MODELS = [
-    "PureConv_32x32",
-    "HybridCosineBidirectional_32x32_Fixed",
-    "HybridCosineBidirectional_32x32_Unfixed",
-    "HybridFourierBidirectional_32x32_Fixed",
-    "HybridFourierBidirectional_32x32_Unfixed",
-    "HybridFirstCosine_32x32_Fixed",
-    "HybridFirstCosine_32x32_Unfixed",
-    "HybridFirstFourier_32x32_Fixed",
-    "HybridFirstFourier_32x32_Unfixed",
-    "CosineBidirectional_32x32_Fixed",
-    "CosineBidirectional_32x32_Unfixed",
-    "FourierBidirectional_32x32_Fixed",
-    "FourierBidirectional_32x32_Unfixed",
-    "FirstCosine_32x32_Fixed",
-    "FirstCosine_32x32_Unfixed",
-    "FirstFourier_32x32_Fixed",
-    "FirstFourier_32x32_Unfixed",
+    "BaselineConv",
+    "BaselineRND",
+    "DCTFirst",
+    "DCTFirst_Fixed",
+    "FFTFirst",
+    "FFTFirst_Fixed",
+    "DCTBidir",
+    "DCTBidir_Fixed",
+    "FFTBidir",
+    "FFTBidir_Fixed",
 ]
 
 DATASETS = [
-    "/data/ColorectalHist",
-    "/data/CIFAR10",
-    "/data/HisDB/classification/CS18",
-    "/data/FashionMNIST",
+    "/net/dataset/albertim/ColorectalHist",
 ]
 
 ##########################################################################
@@ -60,7 +53,7 @@ class Experiment(object):
 
     def get_cmd(self):
 
-        cmd = "python template/RunMe.py --ignoregit " \
+        cmd = "python template/RunMe.py --ignoregit --disable-dataset-integrity " \
               "--experiment-name {EXPERIMENT_NAME:s} " \
               "--model {MODEL:s} " \
               "--output-folder {OUTPUT_FOLDER:s} " \
@@ -83,6 +76,7 @@ class Experiment(object):
     def __repr__(self):
         return self.get_cmd()
 
+
 class ExperimentsBuilder(object):
 
     @staticmethod
@@ -92,29 +86,31 @@ class ExperimentsBuilder(object):
             for dataset in dataset_folders_list:
                 experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
                                         "--momentum 0.9 "
-                                        "--sig-opt-token ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT "
-                                        "--sig-opt-runs 40 "
-                                        "--sig-opt spectralSigOpt.txt ")
+                                        "--sig-opt-token {SIGOPT_TOKEN:s} "
+                                        "--sig-opt-runs {RUNS_PER_MODEL:s} "
+                                        "--sig-opt spectralSigOpt.txt ".format(
+                                            SIGOPT_TOKEN=SIGOPT_TOKEN,
+                                            RUNS_PER_MODEL=str(RUNS_PER_MODEL)))
                 experiments.append(experiment)
         return experiments
 
 
-    @staticmethod
-    def build_longruns_combinations(model_list, dataset_folders_list, experiment_name_prefix, output_folder, epochs):
-        experiments = []
-        for model in model_list:
-            for dataset in dataset_folders_list:
-                best_parameters = ExperimentsBuilder._get_best_parameters(experiment_name_prefix + '_' + model + '_' + dataset)
-
-                experiment = Experiment("long_" + experiment_name_prefix, model, output_folder, dataset, epochs,
-                                        "--momentum 0.9 " \
-                                        "--lr {LR:f} " \
-                                        "--weight-decay {WD:f}".format(
-                                            LR=best_parameters["lr"],
-                                            WD=best_parameters["weight_decay"])
-                                        )
-                experiments.append(experiment)
-        return experiments
+    # @staticmethod
+    # def build_longruns_combinations(model_list, dataset_folders_list, experiment_name_prefix, output_folder, epochs):
+    #     experiments = []
+    #     for model in model_list:
+    #         for dataset in dataset_folders_list:
+    #             best_parameters = ExperimentsBuilder._get_best_parameters(experiment_name_prefix + '_' + model + '_' + dataset)
+    #
+    #             experiment = Experiment("long_" + experiment_name_prefix, model, output_folder, dataset, epochs,
+    #                                     "--momentum 0.9 " \
+    #                                     "--lr {LR:f} " \
+    #                                     "--weight-decay {WD:f}".format(
+    #                                         LR=best_parameters["lr"],
+    #                                         WD=best_parameters["weight_decay"])
+    #                                     )
+    #             experiments.append(experiment)
+    #     return experiments
 
     @staticmethod
     def _retrieve_id_by_name(conn, name):
@@ -127,7 +123,10 @@ class ExperimentsBuilder(object):
 
     @staticmethod
     def _get_best_parameters(experiment_name):
-        conn = Connection(client_token="ZSPFRNSZRKKOREEETGGDQXEAEQLBZJKEZOCGDAFHZPQEVNHT")
+
+        conn = Connection(client_token=SIGOPT_TOKEN)
+        conn.set_api_url("https://api.sigopt.com")
+
         EXPERIMENT_ID = ExperimentsBuilder._retrieve_id_by_name(conn, experiment_name)
 
         if len(EXPERIMENT_ID) > 1:
@@ -168,24 +167,25 @@ def run_experiments(number_gpus, processes_per_gpu, queue):
 
 if __name__ == '__main__':
     # Init parameter
-    NUM_GPUS = torch.cuda.device_count()
+    NUM_GPUs = torch.cuda.device_count()
+
     # Init queue item
     queue = Queue()
 
     print("started...")
 
     experiments = ExperimentsBuilder.build_sigopt_combinations(
-        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS_SHORT,
+        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER, NUMBER_EPOCHS,
     )
     [queue.put(e) for e in experiments]
-    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+    run_experiments(NUM_GPUs, PROCESSES_PER_GPU, queue)
 
-    print("...begin phase 2...")
-
-    experiments = ExperimentsBuilder.build_longruns_combinations(
-        MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER_LONG, NUMBER_EPOCHS_LONG,
-    )
-    [queue.put(e) for e in experiments]
-    run_experiments(NUM_GPUS, PROCESSES_PER_GPU, queue)
+    # print("...begin phase 2...")
+    #
+    # experiments = ExperimentsBuilder.build_longruns_combinations(
+    #     MODELS, DATASETS, EXPERIMENT_NAME_PREFIX, LOG_FOLDER_LONG, NUMBER_EPOCHS_LONG,
+    # )
+    # [queue.put(e) for e in experiments]
+    # run_experiments(NUM_GPUs, PROCESSES_PER_GPU, queue)
 
     print("...finished!")

@@ -256,11 +256,9 @@ class DCTFirst(nn.Module):
             DiscreteCosine2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
                                          spectral_width=48, spectral_height=48, fixed=fixed),
             nn.LeakyReLU(),
-            DiscreteCosine2dConvBlock(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1,
-                                         spectral_width=16, spectral_height=16, fixed=fixed),
+            nn.Conv2d(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1),
             nn.LeakyReLU(),
-            DiscreteCosine2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
-                                         spectral_width=16, spectral_height=16, fixed=fixed),
+            nn.Conv2d(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
         )
 
@@ -298,11 +296,9 @@ class FFTFirst(nn.Module):
             DiscreteFourier2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
                                          spectral_width=48, spectral_height=48, fixed=fixed),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1,
-                                         spectral_width=16, spectral_height=16, fixed=fixed),
+            nn.Conv2d(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
-                                         spectral_width=16, spectral_height=16, fixed=fixed),
+            nn.Conv2d(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
         )
 
@@ -311,7 +307,6 @@ class FFTFirst(nn.Module):
             Flatten(),
             nn.Linear(ocl1 * 4, output_channels)
         )
-
     def forward(self, x):
         self.features = self.encoder(x)
         return self.classifier(self.features)
