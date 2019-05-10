@@ -15,14 +15,14 @@ RUNS_PER_MODEL = 1
 PROCESSES_PER_GPU = 4
 
 MODELS = [
-    "BaselineConv",
-    "BaselineRND",
-    "DCTFirst",
-    "DCTFirst_Fixed",
-    "FFTFirst",
-    "FFTFirst_Fixed",
-    "DCTBidir",
-    "DCTBidir_Fixed",
+    "BaselineConv",#validated
+    "BaselineRND",#validated
+    "DCTFirst",#validated
+    "DCTFirst_Fixed",#validated
+    "FFTFirst", #validated
+    "FFTFirst_Fixed", #validated
+    "DCTBidir",#validated
+    "DCTBidir_Fixed",#validated
     "FFTBidir",
     "FFTBidir_Fixed",
 ]
