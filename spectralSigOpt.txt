@@ -1,4 +1,4 @@
 [
-{"name": "lr", "type": "double", "bounds": { "min" : 0.0001, "max": 0.05 }},
+{"name": "lr", "type": "double", "bounds": { "min" : 0.0001, "max": 0.01 }},
 {"name": "weight_decay", "type": "double", "bounds": { "min" : 0.0, "max": 0.03 }}
 ]

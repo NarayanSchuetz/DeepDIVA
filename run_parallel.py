@@ -4,15 +4,15 @@ from multiprocessing import Process, Queue
 import torch
 from sigopt import Connection
 
-#SIGOPT_TOKEN = "YEQGRJZHNJMNHHZTDJIQKOXILQCSHZVFWWJIIWYNSWKQPGOA"  # production
-SIGOPT_TOKEN = "UQOOVYGGZNNDDFUAQQCCGMVNLVATTXDFKTXFXWIYUGRMJQHW"  # dev
+SIGOPT_TOKEN = "YEQGRJZHNJMNHHZTDJIQKOXILQCSHZVFWWJIIWYNSWKQPGOA"  # production
+#SIGOPT_TOKEN = "UQOOVYGGZNNDDFUAQQCCGMVNLVATTXDFKTXFXWIYUGRMJQHW"  # dev
 
-EXPERIMENT_NAME_PREFIX = "dev"
+EXPERIMENT_NAME_PREFIX = "spectral"
 LOG_FOLDER = "output"
 # LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS = 30
-RUNS_PER_MODEL = 1
-PROCESSES_PER_GPU = 4
+NUMBER_EPOCHS = 100
+RUNS_PER_MODEL = 20
+PROCESSES_PER_GPU = 5
 
 MODELS = [
     "BaselineConv",
@@ -29,7 +29,13 @@ MODELS = [
 
 DATASETS = [
     #"/net/dataset/albertim/ColorectalHist",
-    "/net/dataset/albertim/ColorectalHist",
+    #"/net/dataset/albertim/HisDB/classification/CB55",
+    #"/net/dataset/albertim/HisDB/classification/CSG18",
+    #"/net/dataset/albertim/HisDB/classification/CSG863",
+    "/tmp/ColorectalHist",
+    "/tmp/HisDB/CB55",
+    "/tmp/HisDB/CSG18",
+    "/tmp/HisDB/CSG863",
 ]
 
 ##########################################################################
@@ -87,11 +93,14 @@ class ExperimentsBuilder(object):
             for dataset in dataset_folders_list:
                 experiment = Experiment(experiment_name_prefix, model, output_folder, dataset, epochs,
                                         "--momentum 0.9 "
+                                        "--batch-size 128 "
                                         "--sig-opt-token {SIGOPT_TOKEN:s} "
                                         "--sig-opt-runs {RUNS_PER_MODEL:s} "
+                                        "--sig-opt-project {SIGOPT_PROJECT:s} "                                        
                                         "--sig-opt spectralSigOpt.txt ".format(
                                             SIGOPT_TOKEN=SIGOPT_TOKEN,
-                                            RUNS_PER_MODEL=str(RUNS_PER_MODEL)))
+                                            RUNS_PER_MODEL=str(RUNS_PER_MODEL),
+                                            SIGOPT_PROJECT="_spectral"))
                 experiments.append(experiment)
         return experiments
 
