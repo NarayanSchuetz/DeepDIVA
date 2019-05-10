@@ -1,12 +1,9 @@
 import torch.nn as nn
 from spectral import Dft2d, iDft2d, DctII2d, iDctII2d
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # Model parts are defined here
 # ----------------------------------------------------------------------------------------------------------------------
-
-
 
 class Flatten(nn.Module):
     """
@@ -23,19 +20,52 @@ class Flatten(nn.Module):
 class DiscreteCosine2dConvBlock(nn.Module):
 
     def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
+                 in_channels,  # Input channels on the conv layer
+                 out_channels,  # Output channels of the conv layer
                  kernel_size,
-                 stride=1,
-                 fixed=False,
+                 stride,
+                 padding,
+                 spectral_width,  # This corresponds to the width of the output of the conv layer
+                 spectral_height,  # This corresponds to the height of the output of the conv layer
+                 weight_normalization=True,  # Normalize the weights of the spectral matrices
+                 fixed=False,  # Freeze the spectral weights
+                 random_init=False,  # Initialize the spectral weights at random (so not spectral at all!)
+                 scaling_factor=1,  # Scale the spectral values with a constant
                  groups_conv=1,
-                 padding=1):
+                 ):
 
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
-        self.cos = DctII2d(width, height, fixed=fixed)
+        self.cos = DctII2d(nrows=spectral_width, ncols=spectral_height, weight_normalization=weight_normalization,
+                           fixed=fixed,random_init=random_init, scaling_factor=scaling_factor)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.cos(x)
+        return x
+
+
+class InverseDiscreteCosine2dConvBlock(nn.Module):
+
+    def __init__(self,
+                 in_channels,  # Input channels on the conv layer
+                 out_channels,  # Output channels of the conv layer
+                 kernel_size,
+                 stride,
+                 padding,
+                 spectral_width,  # This corresponds to the width of the output of the conv layer
+                 spectral_height,  # This corresponds to the height of the output of the conv layer
+                 weight_normalization=True,  # Normalize the weights of the spectral matrices
+                 fixed=False,  # Freeze the spectral weights
+                 random_init=False,  # Initialize the spectral weights at random (so not spectral at all!)
+                 scaling_factor=1,  # Scale the spectral values with a constant
+                 groups_conv=1,
+                 ):
+
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
+        self.cos = iDctII2d(nrows=spectral_width, ncols=spectral_height, weight_normalization=weight_normalization,
+                           fixed=fixed,random_init=random_init, scaling_factor=scaling_factor)
 
     def forward(self, x):
         x = self.conv(x)
@@ -46,71 +76,54 @@ class DiscreteCosine2dConvBlock(nn.Module):
 class DiscreteFourier2dConvBlock(nn.Module):
 
     def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
+                 in_channels,  # Input channels on the conv layer
+                 out_channels,  # Output channels of the conv layer
                  kernel_size,
-                 stride=1,
-                 fixed=False,
-                 kernel_size_pooling=None,
+                 stride,
+                 padding,
+                 spectral_width,  # This corresponds to the width of the output of the conv layer
+                 spectral_height,  # This corresponds to the height of the output of the conv layer
+                 weight_normalization=True,  # Normalize the weights of the spectral matrices
+                 fixed=False,  # Freeze the spectral weights
+                 random_init=False,  # Initialize the spectral weights at random (so not spectral at all!)
+                 scaling_factor=1,  # Scale the spectral values with a constant
                  groups_conv=1,
-                 padding=1):
+                 ):
 
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
-        self.dft = Dft2d(width, height, fixed=fixed)
+        self.dft = Dft2d(nrows=spectral_width, ncols=spectral_height, weight_normalization=weight_normalization,
+                           fixed=fixed,random_init=random_init, scaling_factor=scaling_factor)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.dft(x)
         return x
 
-
-class InverseDiscreteCosine2dConvBlock(nn.Module):
-
-    def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 fixed=False,
-                 kernel_size_pooling=None,
-                 groups_conv=1,
-                 padding=1):
-
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
-        self.cos = iDctII2d(width, height, fixed=fixed)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.cos(x)
-        return x
 
 class InverseDiscreteFourier2dConvBlock(nn.Module):
 
     def __init__(self,
-                 width,
-                 height,
-                 in_channels,
-                 out_channels,
+                 in_channels,  # Input channels on the conv layer
+                 out_channels,  # Output channels of the conv layer
                  kernel_size,
-                 stride=1,
-                 fixed=False,
-                 kernel_size_pooling=None,
+                 stride,
+                 padding,
+                 spectral_width,  # This corresponds to the width of the output of the conv layer
+                 spectral_height,  # This corresponds to the height of the output of the conv layer
+                 weight_normalization=True,  # Normalize the weights of the spectral matrices
+                 fixed=False,  # Freeze the spectral weights
+                 random_init=False,  # Initialize the spectral weights at random (so not spectral at all!)
+                 scaling_factor=1,  # Scale the spectral values with a constant
                  groups_conv=1,
-                 padding=1):
+                 ):
 
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, groups=groups_conv, padding=padding)
-        self.dft = iDft2d(width, height, fixed=fixed)
+        self.dft = iDft2d(nrows=spectral_width, ncols=spectral_height, weight_normalization=weight_normalization,
+                           fixed=fixed,random_init=random_init, scaling_factor=scaling_factor)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.dft(x)
         return x
-
-
