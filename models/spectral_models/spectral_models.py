@@ -196,7 +196,7 @@ class DCTBidir_Fixed(DCTBidir):
 @Model
 class FFTBidir(nn.Module):
 
-    def __init__(self, output_channels=10, in_channels=3, ocl1=16,  # output channels layer 1
+    def __init__(self, output_channels=10, in_channels=3, ocl1=15,  # output channels layer 1
                  fixed=False, **kwargs):
         super().__init__()
 
@@ -207,10 +207,10 @@ class FFTBidir(nn.Module):
             DiscreteFourier2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
                                          spectral_width=48, spectral_height=48, fixed=fixed),
             nn.LeakyReLU(),
-            InverseDiscreteFourier2dConvBlock(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1,
+            InverseDiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1,
                                          spectral_width=16, spectral_height=16, fixed=fixed),
             nn.LeakyReLU(),
-            DiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
+            DiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 2, kernel_size=3, stride=1, padding=1,
                                          spectral_width=16, spectral_height=16, fixed=fixed),
             nn.LeakyReLU(),
         )
@@ -285,7 +285,7 @@ class DCTFirst_Fixed(DCTFirst):
 @Model
 class FFTFirst(nn.Module):
 
-    def __init__(self, output_channels=10, in_channels=3, ocl1=18,  # output channels layer 1
+    def __init__(self, output_channels=10, in_channels=3, ocl1=15,  # output channels layer 1
                  fixed=False, **kwargs):
         super().__init__()
 
@@ -296,7 +296,7 @@ class FFTFirst(nn.Module):
             DiscreteFourier2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
                                          spectral_width=48, spectral_height=48, fixed=fixed),
             nn.LeakyReLU(),
-            nn.Conv2d(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1),
+            nn.Conv2d(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1),
             nn.LeakyReLU(),
             nn.Conv2d(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
@@ -314,7 +314,7 @@ class FFTFirst(nn.Module):
 
 @Model
 class FFTFirst_Fixed(FFTFirst):
-    def __init__(self, output_channels=10, in_channels=3, ocl1=32, **kwargs):
+    def __init__(self, output_channels=10, in_channels=3, ocl1=27, **kwargs):
         super().__init__(output_channels=output_channels, in_channels=in_channels, ocl1=ocl1,  fixed=True, **kwargs)
 
 
