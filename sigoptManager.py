@@ -37,8 +37,10 @@ if __name__ == '__main__':
     for experiment in conn.experiments().fetch().iterate_pages():
         experiment_list.append(experiment)
 
-    print_with_pattern(experiment_list, "CS18")
     print_with_pattern(experiment_list, "Colorectal")
+    print_with_pattern(experiment_list, "CSG18")
+    print_with_pattern(experiment_list, "CSG863")
+    print_with_pattern(experiment_list, "CB55")
 
     print("Done!")
 

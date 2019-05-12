@@ -12,7 +12,7 @@ LOG_FOLDER = "output"
 # LOG_FOLDER_LONG = "log"
 NUMBER_EPOCHS = 100
 RUNS_PER_MODEL = 20
-PROCESSES_PER_GPU = 5
+PROCESSES_PER_GPU = 2
 
 MODELS = [
     "BaselineConv",
@@ -33,9 +33,9 @@ DATASETS = [
     #"/net/dataset/albertim/HisDB/classification/CSG18",
     #"/net/dataset/albertim/HisDB/classification/CSG863",
     "/tmp/ColorectalHist",
-    "/tmp/HisDB/CB55",
-    "/tmp/HisDB/CSG18",
-    "/tmp/HisDB/CSG863",
+    #"/tmp/HisDB/CB55",
+    #"/tmp/HisDB/CSG18",
+    #"/tmp/HisDB/CSG863",
 ]
 
 ##########################################################################
