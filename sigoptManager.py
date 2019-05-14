@@ -37,6 +37,7 @@ if __name__ == '__main__':
     for experiment in conn.experiments().fetch().iterate_pages():
         experiment_list.append(experiment)
 
+    #delete_with_pattern(experiment_list, "spectral")
     print_with_pattern(experiment_list, "Colorectal")
     print_with_pattern(experiment_list, "CSG18")
     print_with_pattern(experiment_list, "CSG863")

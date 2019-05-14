@@ -7,12 +7,11 @@ from sigopt import Connection
 SIGOPT_TOKEN = "YEQGRJZHNJMNHHZTDJIQKOXILQCSHZVFWWJIIWYNSWKQPGOA"  # production
 #SIGOPT_TOKEN = "UQOOVYGGZNNDDFUAQQCCGMVNLVATTXDFKTXFXWIYUGRMJQHW"  # dev
 
-EXPERIMENT_NAME_PREFIX = "spectral"
-LOG_FOLDER = "output"
-# LOG_FOLDER_LONG = "log"
-NUMBER_EPOCHS = 100
-RUNS_PER_MODEL = 20
-PROCESSES_PER_GPU = 2
+EXPERIMENT_NAME_PREFIX = "spec_v2.0"
+LOG_FOLDER = "/local/scratch/albertim/output"
+NUMBER_EPOCHS = 20 # For colorectal it get x3 more!
+RUNS_PER_MODEL = 30
+PROCESSES_PER_GPU = 5
 
 MODELS = [
     "BaselineConv",
@@ -32,10 +31,10 @@ DATASETS = [
     #"/net/dataset/albertim/HisDB/classification/CB55",
     #"/net/dataset/albertim/HisDB/classification/CSG18",
     #"/net/dataset/albertim/HisDB/classification/CSG863",
-    "/tmp/ColorectalHist",
-    #"/tmp/HisDB/CB55",
-    #"/tmp/HisDB/CSG18",
-    #"/tmp/HisDB/CSG863",
+    "/local/scratch/ColorectalHist",
+    "/local/scratch/CB55",
+    "/local/scratch/CSG18",
+    "/local/scratch/CSG863",
 ]
 
 ##########################################################################
@@ -70,7 +69,7 @@ class Experiment(object):
             MODEL=self.model_name,
             OUTPUT_FOLDER=self.output_folder,
             DATASET_FOLDER=self.dataset_folder,
-            NUMBER_EPOCHS=self.number_epochs)
+            NUMBER_EPOCHS=self.number_epochs*3 if "Colorectal" in self.dataset_folder else self.number_epochs)
 
         if self.gpu_index is not None:
             cmd = cmd + " --gpu-id {GPU_ID:d} ".format(GPU_ID=self.gpu_index)
