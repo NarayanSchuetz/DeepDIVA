@@ -15,10 +15,10 @@ def retrieve_id_by_name(experiment_list, name):
             retrieved.append(n.id)
     return retrieved
 
-def print_with_pattern(experiment_list, name):
+def print_with_pattern(experiment_list, parts):
     dict = {}
     for n in experiment_list:
-        if name in n.name:
+        if all(p in n.name for p in parts):
             value = conn.experiments(n.id).best_assignments().fetch()
             if value.data:
                 dict[n.name] = [value.data[0].value, n.progress.observation_count]
@@ -38,10 +38,12 @@ if __name__ == '__main__':
         experiment_list.append(experiment)
 
     #delete_with_pattern(experiment_list, "spectral")
-    print_with_pattern(experiment_list, "Colorectal")
-    print_with_pattern(experiment_list, "CSG18")
-    print_with_pattern(experiment_list, "CSG863")
-    print_with_pattern(experiment_list, "CB55")
+    print_with_pattern(experiment_list, ["Colorectal", "v2"])
+    print_with_pattern(experiment_list, ["CSG18", "v2"])
+    print_with_pattern(experiment_list, ["CSG863", "v2"])
+    print_with_pattern(experiment_list, ["CB55", "v2"])
+
+    print_with_pattern(experiment_list, ["Colorectal", "v3"])
 
     print("Done!")
 
