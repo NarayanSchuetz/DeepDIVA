@@ -524,6 +524,116 @@ def hist_colorectal(args):
         target_folder=output_dir)
 
 
+def icdar2017_clamm(args):
+
+    url = "http://clamm.irht.cnrs.fr/wp-content/uploads/ICDAR2017_CLaMM_Training.zip"
+    print("Downloading " + url)
+    zip_name = "ICDAR2017_CLaMM_Training.zip"
+    local_filename, headers = urllib.request.urlretrieve(url, zip_name)
+    zfile = zipfile.ZipFile(local_filename)
+
+    # Make output folders
+    dataset_root = os.path.join(args.output_folder, 'ICDAR2017-CLAMM')
+    dataset_manuscriptDating = os.path.join(dataset_root , 'ManuscriptDating')
+    dataset_md_train = os.path.join(dataset_manuscriptDating , 'train')
+    dataset_styleClassification = os.path.join(dataset_root , 'StyleClassification')
+    dataset_sc_train = os.path.join(dataset_styleClassification, 'train')
+    test_sc_folder = os.path.join(dataset_styleClassification, 'test')
+    test_md_folder = os.path.join(dataset_manuscriptDating, 'test')
+
+    _make_folder_if_not_exists(dataset_root)
+    _make_folder_if_not_exists(dataset_manuscriptDating)
+    _make_folder_if_not_exists(dataset_styleClassification)
+    _make_folder_if_not_exists(test_sc_folder)
+
+    def _write_data_to_folder(zipfile, filenames, labels, folder, start_index,  isTest):
+        print("Writing data\n")
+        sorted_labels = [None]*len(labels)
+        if isTest == 1:
+            for i in range(len(zipfile.infolist())):
+                entry = zipfile.infolist()[i]
+                if "IRHT_P_009793.tif" in entry.filename:
+                    zipfile.infolist().remove(entry)
+                    break
+
+        zip_infolist = zipfile.infolist()[1:]
+
+        for i in range(len(zip_infolist)):
+            entry = zip_infolist[i]
+            entry_index_infilenames = filenames.index(entry.filename[start_index:])
+            sorted_labels[i] = labels[entry_index_infilenames]
+
+        for i, (enrty, label) in enumerate(zip(zipfile.infolist()[1:], sorted_labels)):
+            with zipfile.open(enrty) as file:
+                img = Image.open(file)
+                dest = os.path.join(folder, str(label))
+                _make_folder_if_not_exists(dest)
+                img.save(os.path.join(dest, str(i) + '.png'), "PNG", quality=100)
+
+    def getLabels(zfile):
+        print("Extracting labels\n")
+        filenames, md_labels, sc_labels = [], [], []
+        zip_infolist = zfile.infolist()[1:]
+        for entry in zip_infolist:
+            if '.csv' in entry.filename:
+                with zfile.open(entry) as file:
+                    cf = file.read()
+                    c = csv.StringIO(cf.decode())
+                    next(c) # Skip the first line which is the header of csv file
+                    for row in c:
+
+                        md_label_strt_ind = row.rfind(';')
+                        md_label_end_ind = row.rfind("\r")
+                        md_labels.append(row[md_label_strt_ind+1:md_label_end_ind])
+                        sc_labels_strt_ind = row[:md_label_strt_ind].rfind(';')
+                        sc_labels.append(row[sc_labels_strt_ind+1:md_label_strt_ind])
+                        filename_ind = row[:sc_labels_strt_ind].rfind(';')
+
+                        if filename_ind > -1:
+                            f_name = row[filename_ind+1:sc_labels_strt_ind]
+                        else:
+                            f_name = row[:sc_labels_strt_ind]
+                        if isTest == 1 and f_name == 'IRHT_P_009783.tif':
+                            print('No file named ' + f_name + ". This filename will not be added!")
+                        else:
+                            filenames.append(f_name)
+
+                zfile.infolist().remove(entry) # remove the csv file from infolist
+            if '.db' in entry.filename: # remove the db file from infolist
+                zfile.infolist().remove(entry)
+        return filenames, sc_labels, md_labels
+
+    isTest = 0
+    filenames, sc_labels, md_labels = getLabels(zfile)
+    start_index_training = len("ICDAR2017_CLaMM_Training/")
+    print("Training data is being prepared for style classification!\n")
+    _write_data_to_folder(zfile, filenames, sc_labels, dataset_sc_train, start_index_training, isTest)
+    print("Training data is being prepared for manuscript dating!\n")
+    _write_data_to_folder(zfile, filenames, md_labels, dataset_md_train, start_index_training, isTest)
+
+    os.remove(os.path.join(zfile.filename))
+
+    url = "http://clamm.irht.cnrs.fr/wp-content/uploads/ICDAR2017_CLaMM_task1_task3.zip"
+    print("Downloading " + url)
+    zip_name_test = "ICDAR2017_CLaMM_task1_task3.zip"
+    local_filename_test, headers_test = urllib.request.urlretrieve(url, zip_name_test)
+    zfile_test = zipfile.ZipFile(local_filename_test)
+
+    isTest = 1
+    filenames_test, sc_test_labels, md_test_labels = getLabels(zfile_test)
+    start_index_test = len("ICDAR2017_CLaMM_task1_task3/")
+    print("Test data is being prepared for style classification!\n")
+    _write_data_to_folder(zfile_test, filenames_test, sc_test_labels, test_sc_folder, start_index_test, 1)
+    print("Test data is being prepared for manuscript dating!\n")
+    _write_data_to_folder(zfile_test, filenames_test, md_test_labels, test_md_folder, start_index_test, 1)
+
+    os.remove(os.path.join(zfile_test.filename))
+    print("Training-Validation splitting\n")
+    split_dataset(dataset_folder=dataset_manuscriptDating, split=0.2, symbolic=False)
+    split_dataset(dataset_folder=dataset_styleClassification, split=0.2, symbolic=False)
+    print("ICDAR2017 CLaMM data is ready!")
+
+
 def irmas(args, parts="both"):
     """
     Fetches and prepares the IRMAS instrument dataset (https://zenodo.org/record/1290750#.W-2s4S2ZPa5)
