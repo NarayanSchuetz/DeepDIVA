@@ -205,15 +205,16 @@ class FFTBidir(nn.Module):
 
         self.encoder = nn.Sequential(
             DiscreteFourier2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
-                                       spectral_width=48, spectral_height=48, fixed=fixed,
-                                       scaling_factor=scaling_factor),
+                                       spectral_width=48, spectral_height=48, fixed=fixed),
+                                       #scaling_factor=scaling_factor, weight_normalization=False),
             nn.LeakyReLU(),
             InverseDiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1,
                                               spectral_width=16, spectral_height=16, fixed=fixed),
+                                              #scaling_factor=scaling_factor, weight_normalization=False),
             nn.LeakyReLU(),
             DiscreteFourier2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
-                                       spectral_width=16, spectral_height=16, fixed=fixed,
-                                       scaling_factor=scaling_factor),
+                                       spectral_width=16, spectral_height=16, fixed=fixed),
+                                       #scaling_factor=scaling_factor, weight_normalization=False),
             nn.LeakyReLU(),
         )
 
@@ -232,7 +233,7 @@ class FFTBidir(nn.Module):
 class FFTBidir_Fixed(FFTBidir):
     def __init__(self, output_channels=10, in_channels=3, ocl1=27, **kwargs):
         super().__init__(output_channels=output_channels, in_channels=in_channels, ocl1=ocl1,  fixed=True,
-                         scaling_factor=0.5, **kwargs)
+                         scaling_factor=2, **kwargs)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -297,8 +298,8 @@ class FFTFirst(nn.Module):
 
         self.encoder = nn.Sequential(
             DiscreteFourier2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
-                                       spectral_width=48, spectral_height=48, fixed=fixed,
-                                       scaling_factor=scaling_factor),
+                                       spectral_width=48, spectral_height=48, fixed=fixed),
+                                       #scaling_factor=scaling_factor, weight_normalization=False),
             nn.LeakyReLU(),
             nn.Conv2d(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1),
             nn.LeakyReLU(),
@@ -320,6 +321,6 @@ class FFTFirst(nn.Module):
 class FFTFirst_Fixed(FFTFirst):
     def __init__(self, output_channels=10, in_channels=3, ocl1=27, **kwargs):
         super().__init__(output_channels=output_channels, in_channels=in_channels, ocl1=ocl1,  fixed=True,
-                         scaling_factor=0.5, **kwargs)
+                         scaling_factor=2, **kwargs)
 
 
