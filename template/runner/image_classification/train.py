@@ -147,6 +147,10 @@ def train_one_mini_batch(model, criterion, optimizer, input, target, loss_meter,
     optimizer.zero_grad()
     # Compute gradients
     loss.backward()
+
+    # This line is used to prevent the vanishing / exploding gradient problem
+    #torch.nn.utils.clip_grad_norm_.(model.parameters(), 0.25)
+
     # Perform a step by updating the weights
     optimizer.step()
 
