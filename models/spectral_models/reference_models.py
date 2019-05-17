@@ -131,7 +131,7 @@ class RNDBidir(nn.Module):
         self.classifier = nn.Sequential(
             nn.AvgPool2d(kernel_size=16, stride=1),
             Flatten(),
-            nn.Linear(ocl1 * 8, output_channels)
+            nn.Linear(ocl1 * 4, output_channels)
         )
 
     def forward(self, x):
