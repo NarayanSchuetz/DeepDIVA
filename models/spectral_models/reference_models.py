@@ -118,15 +118,13 @@ class RNDBidir(nn.Module):
 
         self.encoder = nn.Sequential(
             DiscreteCosine2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
-                                       spectral_width=48, spectral_height=48, random_init=True),
+                                      spectral_width=48, spectral_height=48, random_init=True),
             nn.LeakyReLU(),
-
-            InverseDiscreteCosine2dConvBlock(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1,
-                                              spectral_width=16, spectral_height=16, random_init=True),
+            InverseDiscreteCosine2dConvBlock(ocl1, ocl1 * 2, kernel_size=5, stride=3, padding=1,
+                                             spectral_width=16, spectral_height=16, random_init=True),
             nn.LeakyReLU(),
-
             DiscreteCosine2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
-                                       spectral_width=16, spectral_height=16, random_init=True),
+                                      spectral_width=16, spectral_height=16, random_init=True),
             nn.LeakyReLU(),
         )
 
