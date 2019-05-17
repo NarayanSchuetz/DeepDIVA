@@ -79,9 +79,9 @@ class BaselineDeep(nn.Module):
 
 
 @Model
-class BaselineRND(nn.Module):
+class RNDFirst(nn.Module):
     def __init__(self, output_channels=10, in_channels=3, ocl1=32,  # output channels layer 1
-                 fixed=False, **kwargs):
+                 **kwargs):
         super().__init__()
 
         self.expected_input_size = (149, 149)
@@ -106,3 +106,37 @@ class BaselineRND(nn.Module):
     def forward(self, x):
         self.features = self.encoder(x)
         return self.classifier(self.features)
+
+@Model
+class RNDBidir(nn.Module):
+    def __init__(self, output_channels=10, in_channels=3, ocl1=32,  # output channels layer 1
+                 **kwargs):
+        super().__init__()
+
+        self.expected_input_size = (149, 149)
+        self.features = []
+
+        self.encoder = nn.Sequential(
+            DiscreteCosine2dConvBlock(in_channels, ocl1, kernel_size=8, stride=3, padding=0,
+                                       spectral_width=48, spectral_height=48, random_init=True),
+            nn.LeakyReLU(),
+
+            InverseDiscreteCosine2dConvBlock(ocl1 * 2, ocl1 * 2, kernel_size=5, stride=3, padding=1,
+                                              spectral_width=16, spectral_height=16, random_init=True),
+            nn.LeakyReLU(),
+
+            DiscreteCosine2dConvBlock(ocl1 * 2, ocl1 * 4, kernel_size=3, stride=1, padding=1,
+                                       spectral_width=16, spectral_height=16, random_init=True),
+            nn.LeakyReLU(),
+        )
+
+        self.classifier = nn.Sequential(
+            nn.AvgPool2d(kernel_size=16, stride=1),
+            Flatten(),
+            nn.Linear(ocl1 * 8, output_channels)
+        )
+
+    def forward(self, x):
+        self.features = self.encoder(x)
+        return self.classifier(self.features)
+
