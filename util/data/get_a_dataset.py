@@ -9,6 +9,7 @@ import re
 import requests
 import shutil
 import sys
+import csv
 
 # Torch
 import torch
@@ -64,6 +65,10 @@ def _download_file(url, full_path_out, chunk_size=1024):
 
 
 def _unzip_file(full_filepath, output_dir):
+    with open(full_filepath, 'rb') as MyZip:
+        if str(MyZip.read(4)) != "\x50\x4B\x03\x04":
+            print("This is not a zipfile: it might be a rar or something else.")
+            sys.exit(-1)
     with zipfile.ZipFile(full_filepath, "r") as f:
         f.extractall(output_dir)
 
@@ -517,7 +522,7 @@ def hist_colorectal(args):
         label_dir = os.path.join(full_dir_unzipped, label)
         _convert_images(label_dir)
 
-    split_dataset_train_test_val(
+    split_dataset(
         dataset_folder=full_dir_unzipped,
         split=0.2,
         symbolic=False,
@@ -670,6 +675,67 @@ def irmas(args, parts="both"):
         _remove_file(full_path_zipfile)
 
 
+def HAM10000(output_folder, **kwargs):
+    """
+    Fetches and prepares (in a DeepDIVA friendly format) the HAM10000 dataset to the location specified
+    on the file system
+    Dataset presented at:
+        https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DBW86T
+    However, you have to manually download it from here:
+        https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000/downloads/skin-cancer-mnist-ham10000.zip/2
+
+    IMPORTANT:
+    It is expected that the main folder is there after you manually download it (its behind terms&condition acceptance)
+    Moreover, extract the zip and put every image in a folder called images as follows:
+
+    /output_folder/HAM10000
+        HAM10000_metadata.csv
+        images
+            file0.jpg
+            ...
+            file10014.pjg
+
+    This script will then read the metadata and format the dataset as expected from DeepDIVA.
+
+    Parameters
+    ----------
+    output_folder : str
+        String containing the path where the dataset will be downloaded
+
+    Returns
+    -------
+        None
+    """
+
+    DIR_NAME = "HAM10000"
+    output_dir = os.path.join(output_folder, DIR_NAME)
+    IMAGES_DIR = os.path.join(output_dir, "images")
+
+    # Convert images to PNG
+    #_convert_images(IMAGES_DIR)
+
+    # Load the CSV
+    f = open(os.path.join(output_dir,'HAM10000_metadata.csv'))
+    csv_f = csv.reader(f)
+    next(csv_f) # Skip header line
+
+    # Process the images and put them in their proper folder
+    for row in csv_f:
+        # Create if necessary the class folder
+        class_folder_path = os.path.join(IMAGES_DIR, "train", row[2])  # row[2] is the class (dx)
+        _make_folder_if_not_exists(class_folder_path)
+        #Move the image to proper location
+        os.rename(os.path.join(IMAGES_DIR, row[1] + ".png"), os.path.join(class_folder_path, row[1] + ".png"))  # row[1] is the filename (image_id)
+
+    # Split train/test
+    split_dataset(dataset_folder=IMAGES_DIR, split=0.2, symbolic=False)
+    # Mirror the val/test
+    print("WARNING: THERE IS NO TEST SET FOR THIS DATASET")
+    os.system("cp -rf {src:s} {dst:s}".format(src=os.path.join(IMAGES_DIR, "val"), dst=os.path.join(IMAGES_DIR, "test")))
+    os.system("mv images / *./")
+    os.system("rm HAM10000_metadata.csv")
+    os.system("rm -rf images")
+
 if __name__ == "__main__":
     downloadable_datasets = [name[0] for name in inspect.getmembers(sys.modules[__name__],
                                                                     inspect.isfunction) if not name[0].startswith('_')]
@@ -688,4 +754,4 @@ if __name__ == "__main__":
                         default='./data/')
     args = parser.parse_args()
 
-    getattr(sys.modules[__name__], args.dataset)(args)
+    getattr(sys.modules[__name__], args.dataset)(**args.__dict__)
