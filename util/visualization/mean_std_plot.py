@@ -1,5 +1,10 @@
+import argparse
+import os
+
 import matplotlib as mpl
 # To facilitate plotting on a headless server
+from util.misc import tensor_to_image, save_numpy_image
+
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -68,3 +73,59 @@ def plot_mean_std(x=None, arr=None, suptitle='', title='', xlabel='X', ylabel='Y
         fig.clf()
         plt.close()
     return data
+
+
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+#                                          description='This script can be used to create nice plots with '
+#                                                      'mean and std represented as shaded area as in multi-run')
+#
+#     parser.add_argument('--input-folder',
+#                         help='path to the *.npy files.',
+#                         required=True,
+#                         type=str)
+#     args = parser.parse_args()
+#
+#     print("starting...")
+#
+#     MODELS = ["RNDFirst", "FFTFirst", "DCTFirst"]
+#     DATASETS = ["CB55", "ColorectalHist", "HAM10000", "Flowers"]
+#
+#     for model in MODELS:
+#         for dataset in DATASETS:
+#             print("cd /local/scratch/albertim/output \n"
+#                   "cd multi_multi_{}_".format(model), "\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd {}".format(dataset), "\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cd `ls`\n",
+#                   "cp val_values.npy /local/scratch/albertim/output/npy/{}_{}.npy".format(model, dataset))
+#     print("cd /local/scratch/albertim/output \n")
+
+    # # Select all the numpy matrices saved there
+    # file_names = [f for f in os.listdir(args.input_folder) if os.path.isfile(os.path.join(args.input_folder, f)) and ".npy" in f]
+
+    # image = plot_mean_std(x = (np.arange(args.epochs + 1) - 1),
+    # arr = np.roll(val_scores[:i + 1], axis=1, shift=1),
+    # suptitle = 'Multi-Run: Val',
+    # title = 'Runs: {}'.format(i + 1),
+    # xlabel = 'Epoch', ylabel = 'Score',
+    # ylim = [0, 100.0])
+    #
+    #
+    # # Ensuring the data passed as parameter is healthy
+    # image = tensor_to_image(image)
+    #
+    # # Write image to output folder
+    # dest_filename = os.path.join(output_folder, 'images', tag + '.png')
+    # save_numpy_image(dest_filename, image)

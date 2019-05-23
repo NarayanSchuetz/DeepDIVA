@@ -8,10 +8,10 @@ def delete_with_pattern(experiment_list, name):
             conn.experiments(n.id).delete()
 
 
-def retrieve_id_by_name(experiment_list, name):
+def retrieve_id_by_name(experiment_list, parts):
     retrieved = []
     for n in experiment_list:
-        if name in n.name:
+        if all(p in n.name for p in parts):
             retrieved.append(n.id)
     return retrieved
 
@@ -65,21 +65,16 @@ if __name__ == '__main__':
     for experiment in conn.experiments().fetch().iterate_pages():
         experiment_list.append(experiment)
 
-    #delete_with_pattern(experiment_list, "v3")
+    #delete_with_pattern(experiment_list, "spec_v6.0_RNDBidir_/")
+
     # print_with_pattern(experiment_list, ["Colorectal", "v3"])
     # print_with_pattern(experiment_list, ["CSG18", "v3"])
     # print_with_pattern(experiment_list, ["CSG863", "v3"])
-    # print_with_pattern(experiment_list, ["CB55", "v3"])
+
+    print_with_pattern(experiment_list, ["rerun"])
 
     print("--------------------------------------------")
 
-    # print_best_assignement_with_pattern(experiment_list, ["Colorectal", "v2"])
-    # print_best_assignement_with_pattern(experiment_list, ["CSG18", "v2"])
-    # print_best_assignement_with_pattern(experiment_list, ["CSG863", "v2"])
-    # print_best_assignement_with_pattern(experiment_list, ["CB55", "v2"])
-
-    print("--------------------------------------------")
-
-    print_with_pattern(experiment_list, ["v6"])
+    #print_best_assignement_with_pattern(experiment_list, ["v2", "Deep"])
 
     print("Done!")
